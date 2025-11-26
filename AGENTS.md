@@ -18,7 +18,7 @@
 
 # npm scripts
 - `npm run build`: compile TypeScript to .js in the `dist/` folder
-- `npm run check`: check for lint and formatting errors using biome
+- `npm run check`: run TypeScript type checks then biome for lint/format
 - `npm run test`: run tests
 
 # Code style
@@ -40,3 +40,7 @@
 # Commit guidelines
 - History is light; adopt Conventional Commits (e.g., `feat: add video downscaling`, `fix: handle metadata`).
 - Do not push to remote repositories.
+
+# Planning and Execution
+When the user tells you to switch into "plan" mode, don't change any files other than `PLAN.md` and don't execute any
+commands.
