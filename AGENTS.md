@@ -13,12 +13,15 @@
 
 # Project structure
 - `src/`: source code and test code
-- `fixtures/`: a few example images and videos that can be used for testing - do not modify those
+- `fixtures/`: example images and videos for testing; download helper writes new videos here, avoid manual edits to
+  committed fixtures
+- `scripts/`: helper scripts (e.g., fixture downloader)
 - `dist/`: the compiled .js code - do not modify as this is auto-generated from the source code
 
 # npm scripts
 - `npm run build`: compile TypeScript to .js in the `dist/` folder
 - `npm run check`: run TypeScript type checks then biome for lint/format
+- `npm run download-fixtures`: download the three test videos into `fixtures/` (skips existing files)
 - `npm run test`: run tests
 
 # Code style
