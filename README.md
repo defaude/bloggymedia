@@ -2,7 +2,7 @@
 
 Optimize images and videos for blogging.
 
-Given a path as parameter, this command will
+Run `bloggymedia` with an optional path (defaults to the current working directory) to
 - ignore all files that are not image or video files (just leave them completely untouched)
 - back up all the image and video files to a `.originals` subdirectory
 - create optimized versions:
@@ -14,5 +14,7 @@ Given a path as parameter, this command will
 - provide a nice CLI environment that shows the current progress
 
 ```shell
+bloggymedia
+# or pass a specific folder
 bloggymedia ./path/to/folder/with/media/files
 ```

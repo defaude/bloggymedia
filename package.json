@@ -9,7 +9,8 @@
         "build": "tsdown",
         "check": "tsc && biome check",
         "download-fixtures": "node scripts/download-test-fixtures.js",
-        "test": "vitest"
+        "test": "vitest run",
+        "test-watch": "vitest"
     },
     "keywords": [
         "image",
