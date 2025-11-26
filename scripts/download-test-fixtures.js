@@ -3,7 +3,7 @@ import { access, mkdir } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 const fixturesPath = fileURLToPath(new URL('../fixtures/', import.meta.url));
 
@@ -12,14 +12,8 @@ const downloads = [
     'https://thetestdata.com/assets/video/mp4/720/5MB_720P_THETESTDATA.COM_mp4.mp4',
     'https://thetestdata.com/assets/video/mp4/480/5MB_480P_THETESTDATA.COM_mp4.mp4',
 ];
-
-async function fileExists(path) {
-    try {
-        await access(path);
-        return true;
-    } catch {
-        return false;
-    }
+for (const url of downloads) {
+    await downloadToFixtures(url);
 }
 
 async function downloadToFixtures(url) {
@@ -43,17 +37,11 @@ async function downloadToFixtures(url) {
     console.log(`Downloaded ${filename}`);
 }
 
-export async function main() {
-    for (const url of downloads) {
-        await downloadToFixtures(url);
+async function fileExists(path) {
+    try {
+        await access(path);
+        return true;
+    } catch {
+        return false;
     }
-}
-
-const isDirectRun = typeof process.argv[1] === 'string' && import.meta.url === pathToFileURL(process.argv[1]).href;
-
-if (isDirectRun) {
-    main().catch(error => {
-        console.error(error instanceof Error ? error.message : error);
-        process.exitCode = 1;
-    });
 }
