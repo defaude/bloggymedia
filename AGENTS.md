@@ -34,6 +34,7 @@
 - Maintain the current iteration plan in `PLAN.md`, updating it after each planning cycle or implementation change.
 - Keep `PLAN.md` in the enforced format: `Status` + `Open items` (current TODOs) + `Done recently` (≤20 entries). Prune
   older done items; update PLAN when tasks are completed (move from Open → Done).
+- Use only English language in `PLAN.md`.
 
 # Calling non-JS tools via zx
 - All calls to external tools like `ffmpeg` via zx should be wrapped in dedicated adapter functions.
