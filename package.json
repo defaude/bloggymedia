@@ -1,0 +1,28 @@
+{
+    "name": "@defaude/bloggymedia",
+    "description": "Optimize images and videos for blogging.",
+    "version": "1.0.0",
+    "license": "MIT",
+    "type": "module",
+    "bin": "dist/index.js",
+    "scripts": {
+        "check": "biome check"
+    },
+    "keywords": [
+        "image",
+        "video",
+        "optimize"
+    ],
+    "author": {
+        "name": "Roland Hummel",
+        "email": "git@defaude.info",
+        "url": "https://github.com/defaude"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "2.3.7",
+        "@rio-cloud/biome-config": "1.0.0",
+        "tsdown": "0.16.7",
+        "typescript": "5.9.3",
+        "vitest": "4.0.14"
+    }
+}
