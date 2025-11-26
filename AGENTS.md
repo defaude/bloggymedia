@@ -32,7 +32,7 @@
 - Use concise, explanatory comments only where the code genuinely needs clarification.
 - For any substantive script or heuristic change, review/update this `AGENTS.md` file.
 - Maintain the current iteration plan in `PLAN.md`, updating it after each planning cycle or implementation change.
-- Keep `PLAN.md` in the enforced format: `Status` + `Open items` (current TODOs) + `Done recently` (≤5 entries). Prune
+- Keep `PLAN.md` in the enforced format: `Status` + `Open items` (current TODOs) + `Done recently` (≤20 entries). Prune
   older done items; update PLAN when tasks are completed (move from Open → Done).
 
 # Calling non-JS tools via zx
@@ -45,5 +45,8 @@
 - Do not push to remote repositories.
 
 # Planning and Execution
-When the user tells you to switch into "plan" mode, don't change any files other than `PLAN.md` and don't execute any
-commands.
+When the user tells you to switch into "plan" mode, you're not allowed to change any files or execute any commands.
+Only exception: The `PLAN.md` may be read and edited (and the neccessary commands for doing just that are okay, too).
+
+# Communication with the user
+All communication with the user shall be in German.
