@@ -6,6 +6,5 @@ export type MogrifyOptions = {
 };
 
 export async function resizeImage({ input, maxSize }: MogrifyOptions) {
-    // Wrapper for mogrify; options will be refined alongside processing logic.
-    await $`mogrify -resize ${maxSize} ${input}`;
+    await $`mogrify -resize ${maxSize}\\> ${input}`;
 }

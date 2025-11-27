@@ -1,22 +1,77 @@
-import { transcodeVideo } from '../adapters/ffmpeg.js';
-import { resizeImage } from '../adapters/mogrify.js';
-import type { CliOptions } from '../cli.js';
+import { cp, mkdir } from 'node:fs/promises';
+import { basename, extname, join } from 'node:path';
 
-type MediaFile = {
+import { resizeImage } from '../adapters/mogrify.js';
+
+type MediaType = 'image' | 'video' | 'other';
+
+export type MediaFile = {
     path: string;
-    type: 'image' | 'video';
+    type: MediaType;
 };
 
-export async function processMedia(_options: CliOptions, _files: MediaFile[]) {
-    // Skeleton function to wire adapters; implementation will classify files and call processors.
-    // Placeholder to anchor upcoming logic.
-    await Promise.resolve();
+const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp']);
+const VIDEO_EXTENSIONS = new Set(['.mp4', '.mov', '.avi']);
+
+export function classifyFile(filePath: string): MediaType {
+    const extension = extname(filePath).toLowerCase();
+
+    if (IMAGE_EXTENSIONS.has(extension)) {
+        return 'image';
+    }
+
+    if (VIDEO_EXTENSIONS.has(extension)) {
+        return 'video';
+    }
+
+    return 'other';
 }
 
-export async function handleImage(file: MediaFile) {
+type ProcessFilesOptions = {
+    workingDir: string;
+    filePaths: string[];
+};
+
+export async function processFiles({ workingDir, filePaths }: ProcessFilesOptions) {
+    for (const filePath of filePaths) {
+        const mediaFile: MediaFile = { path: filePath, type: classifyFile(filePath) };
+
+        switch (mediaFile.type) {
+            case 'image':
+                await handleImage(mediaFile, workingDir);
+                break;
+            case 'video':
+                await handleVideo(mediaFile);
+                break;
+            default:
+                await handleOther(mediaFile);
+                break;
+        }
+    }
+}
+
+export async function handleImage(file: MediaFile, workingDir: string) {
+    const originalsDir = join(workingDir, '.originals');
+    await mkdir(originalsDir, { recursive: true });
+
+    const backupPath = join(originalsDir, basename(file.path));
+
+    try {
+        await cp(file.path, backupPath, { errorOnExist: true, force: false });
+    } catch (error: unknown) {
+        const err = error as NodeJS.ErrnoException;
+        if (err?.code !== 'EEXIST' && err?.code !== 'ERR_FS_CP_EEXIST') {
+            throw error;
+        }
+    }
+
     await resizeImage({ input: file.path, maxSize: '1200x1200' });
 }
 
 export async function handleVideo(file: MediaFile) {
-    await transcodeVideo({ input: file.path, output: file.path, maxResolution: '1280:720' });
+    console.log(`Video handler placeholder for ${basename(file.path)}`);
+}
+
+export async function handleOther(_file: MediaFile) {
+    // intentionally no-op
 }
