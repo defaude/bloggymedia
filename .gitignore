@@ -1,3 +1,7 @@
 .idea/
 node_modules/
 dist/
+
+fixtures/*
+fixtures/!fixtures.json
+test-working-dir/

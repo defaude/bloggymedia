@@ -8,7 +8,7 @@
     "scripts": {
         "build": "tsdown",
         "check": "tsc && biome check",
-        "download-fixtures": "node scripts/download-test-fixtures.js",
+        "generate-fixtures": "node scripts/generate-fixtures.js",
         "test": "vitest run",
         "test-watch": "vitest"
     },
