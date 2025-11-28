@@ -5,7 +5,7 @@
 **Status**: Draft  
 **Input**: User description: "CLI to optimize media files in a directory for blogging; only direct children; back up originals into `.bloggymedia-originals` without renaming; images max 1200x1200 via mogrify + metadata strip + optional optimizers; videos inspected via ffprobe, re-encode to H.264 720p/30fps with metadata stripped and audio copied when needed; skip re-encode when already compliant; live TUI with progress, warnings, errors, final stats; non-media untouched; never clean backups; accept uppercase extensions."
 
-> Constitution alignment: keep media handling non-destructive (back up to `.bloggymedia-originals` without altering filenames), enforce image (≤1200x1200) and video (H.264 ≤720p, ≤30fps, metadata stripped) constraints, route external tools through zx adapters, stick to TypeScript/tsdown, and plan deterministic vitest coverage with fixtures from `npm run download-fixtures`.
+> Constitution alignment: keep media handling non-destructive (back up to `.bloggymedia-originals` without altering filenames), enforce image (≤1200x1200) and video (H.264 ≤720p, ≤30fps, metadata stripped) constraints, route external tools through zx adapters, stick to TypeScript/tsdown, and plan deterministic vitest coverage with sample files from the `fixtures/` directory.
 
 ## User Scenarios & Testing *(mandatory)*
 

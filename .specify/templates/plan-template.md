@@ -34,7 +34,7 @@
 - External tooling goes through dedicated zx-based adapters; no inline shell calls in feature code.
 - Media handling stays non-destructive (.originals backup), skips non-media, and enforces output limits (metadata removal, images ≤1200x1200, videos H.264 ≤720p).
 - TypeScript-only targeting Node 22; build via tsdown; no edits to `dist/`; TypeScript/tsdown warnings treated as errors.
-- Tests accompany new behavior using vitest; fixtures come from `npm run download-fixtures`, remain immutable in git, and tests stay deterministic (no network/time/system coupling).
+- Tests accompany new behavior using vitest; fixtures come from `npm run generate-fixtures`, are not checked into git, and tests stay deterministic (no network/time/system coupling).
 - `npm run check` must succeed; CLI output must keep progress on stdout and failures on stderr with non-zero exit codes.
 
 ## Project Structure

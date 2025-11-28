@@ -22,7 +22,7 @@ Media optimization is non-destructive: all originals are copied into `.originals
 The codebase is TypeScript-only and targets the current Node 22 toolchain. Builds run through tsdown; direct edits to `dist/` are forbidden. TypeScript and tsdown warnings are treated as errors, and published CLI surfaces remain consistent with the bundled output to ensure predictable installs.
 
 ### IV. Tests & Fixtures Drive Changes
-New behavior ships with vitest coverage—favoring integration around the CLI and adapter boundaries—with failing tests added before fixes whenever feasible. Media fixtures live in `fixtures/` and are fetched via `npm run download-fixtures`; committed fixtures are immutable, and new fixtures are added through the downloader. Tests must be deterministic (no network, time, or host-specific assumptions).
+New behavior ships with vitest coverage—favoring integration around the CLI and adapter boundaries — with failing tests added before fixes whenever feasible. Sample files are available in the `fixtures` folder. They're not checked into git, though, but there's the `npm run 
 
 ### V. Linting & CLI Experience
 `npm run check` (tsc + biome) must pass before merge to keep code quality and formatting consistent. The CLI communicates progress on stdout, failures on stderr, returns non-zero on errors, and logs invoked external commands or paths when helpful for debugging without leaking sensitive data. Defaults favor the current working directory while handling missing dependencies gracefully.
@@ -33,7 +33,9 @@ New behavior ships with vitest coverage—favoring integration around the CLI an
 - Build: tsdown for bundling; do not edit generated `dist/` artifacts.
 - Tooling: zx for shell orchestration, wrapped in adapters; biome for lint/format; vitest for tests.
 - Media processing: relies on ffmpeg/mogrify and related system codecs; keep these declared in docs and surfaced in error messages when absent.
-- Fixtures: stored in `fixtures/`; downloader script (`npm run download-fixtures`) is the only supported way to add/update media samples.
+- Fixtures: stored in `fixtures/`, but not checked into git; script to generate them once (`npm run generate-fixtures`) is the only supported way to add/update media samples.
+- Before tests are executed, make sure that the files defined in `fixtures/fixtures.json` are available in the `fixtures/` directory. If that's not the case, try running `npm run generate-fixtures`.
+- Tests are not using the `fixtures/` directory directly but should be working in the `test-working-dir/` directory instead. This test working directory needs to be deleted, re-created, and populated with copies from all files under `fixtures/` before each test that depends on actual files.
 
 ## Workflow & Quality Gates
 
