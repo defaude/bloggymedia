@@ -5,8 +5,6 @@
 **Status**: Draft  
 **Input**: User description: "$ARGUMENTS"
 
-> Constitution alignment: keep media handling non-destructive (`.originals` backup), enforce image (≤1200x1200) and video (H.264 ≤720p, metadata stripped) constraints, route external tools through zx adapters, stick to TypeScript/tsdown, and plan deterministic vitest coverage with sample files from the `fixtures/` directory.
-
 ## User Scenarios & Testing *(mandatory)*
 
 <!--

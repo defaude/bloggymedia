@@ -1,51 +1,50 @@
-<!--
-Sync Impact Report
-Version change: N/A → 1.0.0
-Modified principles: Initialized core principles (I–V)
-Added sections: Core Principles content, Technical Constraints & Stack, Workflow & Quality Gates, Governance detail
-Removed sections: None
-Templates requiring updates: .specify/templates/plan-template.md ✅ | .specify/templates/spec-template.md ✅ | .specify/templates/tasks-template.md ✅ | .specify/templates/commands/ (not present) ⚠ pending if added later
-Follow-up TODOs: None
--->
-
-# bloggymedia Constitution
+# [PROJECT_NAME] Constitution
+<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
 
 ## Core Principles
 
-### I. Reuse First via Adapters
-Prefer existing libraries and system tools (e.g., ffmpeg, mogrify, fast-glob) before writing bespoke code. All external tool invocations are isolated behind dedicated adapter functions built with zx so call sites stay testable and portable. Add custom logic only when configuration or upstream improvements are insufficient, and document why in the change description to preserve maintainability.
+### [PRINCIPLE_1_NAME]
+<!-- Example: I. Library-First -->
+[PRINCIPLE_1_DESCRIPTION]
+<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
 
-### II. Safe Media Processing Pipeline
-Media optimization is non-destructive: all originals are copied into `.originals` before any transformation, and non-media files remain untouched. Every run must be idempotent for already-processed inputs. Outputs obey fixed constraints—metadata stripped, images capped at 1200x1200, videos re-encoded to H.264 with a 720p ceiling respecting orientation—and the CLI fails fast with clear errors if required tooling is missing or inputs violate constraints.
+### [PRINCIPLE_2_NAME]
+<!-- Example: II. CLI Interface -->
+[PRINCIPLE_2_DESCRIPTION]
+<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
 
-### III. Type-Safe Delivery & Build Integrity
-The codebase is TypeScript-only and targets the current Node 22 toolchain. Builds run through tsdown; direct edits to `dist/` are forbidden. TypeScript and tsdown warnings are treated as errors, and published CLI surfaces remain consistent with the bundled output to ensure predictable installs.
+### [PRINCIPLE_3_NAME]
+<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
+[PRINCIPLE_3_DESCRIPTION]
+<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
 
-### IV. Tests & Fixtures Drive Changes
-New behavior ships with vitest coverage—favoring integration around the CLI and adapter boundaries — with failing tests added before fixes whenever feasible. Sample files are available in the `fixtures` folder. They're not checked into git, though, but there's the `npm run 
+### [PRINCIPLE_4_NAME]
+<!-- Example: IV. Integration Testing -->
+[PRINCIPLE_4_DESCRIPTION]
+<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
 
-### V. Linting & CLI Experience
-`npm run check` (tsc + biome) must pass before merge to keep code quality and formatting consistent. The CLI communicates progress on stdout, failures on stderr, returns non-zero on errors, and logs invoked external commands or paths when helpful for debugging without leaking sensitive data. Defaults favor the current working directory while handling missing dependencies gracefully.
+### [PRINCIPLE_5_NAME]
+<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
+[PRINCIPLE_5_DESCRIPTION]
+<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
 
-## Technical Constraints & Stack
+## [SECTION_2_NAME]
+<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
 
-- Language/runtime: Node.js with TypeScript targeting Node 22; ESM throughout.
-- Build: tsdown for bundling; do not edit generated `dist/` artifacts.
-- Tooling: zx for shell orchestration, wrapped in adapters; biome for lint/format; vitest for tests.
-- Media processing: relies on ffmpeg/mogrify and related system codecs; keep these declared in docs and surfaced in error messages when absent.
-- Fixtures: stored in `fixtures/`, but not checked into git; script to generate them once (`npm run generate-fixtures`) is the only supported way to add/update media samples.
-- Before tests are executed, make sure that the files defined in `fixtures/fixtures.json` are available in the `fixtures/` directory. If that's not the case, try running `npm run generate-fixtures`.
-- Tests are not using the `fixtures/` directory directly but should be working in the `test-working-dir/` directory instead. This test working directory needs to be deleted, re-created, and populated with copies from all files under `fixtures/` before each test that depends on actual files.
+[SECTION_2_CONTENT]
+<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
 
-## Workflow & Quality Gates
+## [SECTION_3_NAME]
+<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
 
-- Plan and specs must acknowledge constitution gates before implementation (see template “Constitution Check”).
-- Every change runs `npm run check` and targeted vitest suites; reject changes that relax media safety constraints or adapter boundaries.
-- Code reviews verify adapter usage for external tools, non-destructive media handling (.originals), and adherence to output limits (metadata stripping, resize bounds, H.264 @ 720p).
-- Update AGENTS.md/PLAN.md when workflows or heuristics change; keep documentation in English.
+[SECTION_3_CONTENT]
+<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
 
 ## Governance
+<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-This constitution supersedes informal practices. Amendments require a documented proposal, review for compliance impact, and an explicit version bump recorded below. Semantic versioning applies: MAJOR for breaking governance or removed principles; MINOR for new or materially expanded principles/sections; PATCH for clarifications without behavioral change. Compliance is checked in PR reviews and in the “Constitution Check” section of plans/specs; deviations must be justified and time-bounded.
+[GOVERNANCE_RULES]
+<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
 
-**Version**: 1.0.0 | **Ratified**: 2025-11-27 | **Last Amended**: 2025-11-27
+**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
+<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->

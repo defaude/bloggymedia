@@ -12,8 +12,6 @@ description: "Task list template for feature implementation"
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
-**Constitution guardrails**: include tasks that keep media handling non-destructive (`.originals` backup), enforce image (≤1200x1200) and video (H.264 ≤720p, metadata stripped) limits, route external tools via zx adapters, add vitest coverage with sample files from the `fixtures/` directory, and run `npm run check` before completion.
-
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
