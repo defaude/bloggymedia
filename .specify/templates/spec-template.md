@@ -77,6 +77,8 @@
 
 ## Requirements *(mandatory)*
 
+**Constitution alignment**: Capture non-destructive handling (backups in `.originals`, idempotent reruns), adapter-only external tooling (zx in `src/adapters`), Node 22 + TypeScript `strict` constraints, default media bounds (images ≤1200x1200; videos ≤720p/H.264) and CLI UX/progress expectations. State when deviations are intentional.
+
 <!--
   ACTION REQUIRED: The content in this section represents placeholders.
   Fill them out with the right functional requirements.

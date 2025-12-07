@@ -3,7 +3,7 @@
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
 **Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
 
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
+**Note**: This template is filled in by the `/speckit.plan` command. Align every section with the Constitution Check below.
 
 ## Summary
 
@@ -31,7 +31,11 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- Non-destructive plan: backups to `.originals`, idempotent reruns, no writes outside the working directory.
+- Tooling boundaries: all external binaries invoked via zx-based adapters in `src/adapters` (no direct shelling out in core).
+- Stack compliance: Node 22 + TypeScript `strict`, tsdown build, explicit types for CLI surfaces and adapters.
+- Test plan: Vitest coverage for CLI validation, adapter interactions, media bounds, and error paths; integration runs are opt-in.
+- UX expectations: progress/output describes backups and processing counts; default media bounds centralized and validated.
 
 ## Project Structure
 

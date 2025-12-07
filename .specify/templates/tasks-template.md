@@ -25,6 +25,13 @@ description: "Task list template for feature implementation"
 - **Mobile**: `api/src/`, `ios/src/` or `android/src/`
 - Paths shown below assume single project - adjust based on plan.md structure
 
+## Constitution Alignment
+
+- Include tasks for non-destructive handling (backup to `.originals`, idempotent reruns, bounded working directory writes).
+- External tooling tasks MUST flow through zx-based adapters in `src/adapters`; add work items to mock adapters in tests.
+- Add Vitest tasks for CLI validation, adapter interactions, and media bound enforcement; flag integration runs explicitly.
+- Capture CLI UX/progress tasks so users see counts of backed-up/processed files and actionable errors.
+
 <!-- 
   ============================================================================
   IMPORTANT: The tasks below are SAMPLE TASKS for illustration purposes only.
