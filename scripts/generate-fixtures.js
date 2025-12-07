@@ -1,47 +1,91 @@
-import { createWriteStream } from 'node:fs';
-import { access, mkdir } from 'node:fs/promises';
-import { basename, join } from 'node:path';
-import { Readable } from 'node:stream';
-import { pipeline } from 'node:stream/promises';
+import { readdir, readFile, rm } from 'node:fs/promises';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const fixturesPath = fileURLToPath(new URL('../fixtures/', import.meta.url));
+import { $ } from 'zx';
 
-const downloads = [
-    'https://thetestdata.com/assets/video/mp4/highquality/4K_4_Thetestdata.mp4',
-    'https://thetestdata.com/assets/video/mp4/720/5MB_720P_THETESTDATA.COM_mp4.mp4',
-    'https://thetestdata.com/assets/video/mp4/480/5MB_480P_THETESTDATA.COM_mp4.mp4',
-];
-for (const url of downloads) {
-    await downloadToFixtures(url);
+const fixturesDir = fileURLToPath(new URL('../fixtures/', import.meta.url));
+const fixturesListPath = join(fixturesDir, 'fixtures.json');
+const videoDurationSeconds = 3;
+
+const fixtures = JSON.parse(await readFile(fixturesListPath, 'utf8'));
+
+if (!Array.isArray(fixtures)) {
+    throw new Error('fixtures.json must be an array of filenames');
 }
 
-async function downloadToFixtures(url) {
-    const filename = basename(url);
-    const targetPath = join(fixturesPath, filename);
+await cleanFixturesDirectory();
 
-    if (await fileExists(targetPath)) {
-        console.log(`Skipping existing ${filename}`);
-        return;
+for (const fixtureName of fixtures) {
+    const imageParams = parseImageFixture(fixtureName);
+    if (imageParams) {
+        await generateImage(imageParams);
+        continue;
     }
 
-    await mkdir(fixturesPath, { recursive: true });
-
-    const response = await fetch(url);
-
-    if (!response.ok || response.body === null) {
-        throw new Error(`Failed to download ${url} (status ${response.status})`);
+    const videoParams = parseVideoFixture(fixtureName);
+    if (videoParams) {
+        await generateVideo(videoParams);
+        continue;
     }
 
-    await pipeline(Readable.fromWeb(response.body), createWriteStream(targetPath));
-    console.log(`Downloaded ${filename}`);
+    throw new Error(`Unsupported fixture filename format: ${fixtureName}`);
 }
 
-async function fileExists(path) {
-    try {
-        await access(path);
-        return true;
-    } catch {
-        return false;
+async function cleanFixturesDirectory() {
+    const entries = await readdir(fixturesDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+        if (entry.name === 'fixtures.json') {
+            continue;
+        }
+
+        await rm(join(fixturesDir, entry.name), { recursive: true, force: true });
     }
+}
+
+function parseImageFixture(filename) {
+    const match = /^img-(\d+)x(\d+)\.(png|jpg)$/.exec(filename);
+    if (!match) {
+        return null;
+    }
+
+    const [, width, height, format] = match;
+    return { filename, width: Number(width), height: Number(height), format };
+}
+
+function parseVideoFixture(filename) {
+    const match = /^vid-(\d+)fps-(\d+)x(\d+)-(h264|h265)-(audio|noaudio)\.mp4$/.exec(filename);
+    if (!match) {
+        return null;
+    }
+
+    const [, fps, width, height, codec, audio] = match;
+    return {
+        filename,
+        fps: Number(fps),
+        width: Number(width),
+        height: Number(height),
+        codec,
+        hasAudio: audio === 'audio',
+    };
+}
+
+async function generateImage({ filename, width, height, format }) {
+    const target = join(fixturesDir, filename);
+    const qualityArgs = format === 'jpg' ? ['-q:v', '2'] : [];
+    const input = `testsrc=size=${width}x${height}:rate=1`;
+
+    await $`ffmpeg -v error -f lavfi -i ${input} -frames:v 1 ${qualityArgs} ${target}`;
+}
+
+async function generateVideo({ filename, width, height, fps, codec, hasAudio }) {
+    const target = join(fixturesDir, filename);
+    const videoInput = `testsrc=size=${width}x${height}:rate=${fps}`;
+    const videoCodec = codec === 'h264' ? 'libx264' : 'libx265';
+    const videoTagArgs = codec === 'h265' ? ['-tag:v', 'hvc1'] : [];
+    const audioInputs = hasAudio ? ['-f', 'lavfi', '-i', 'sine=frequency=1000:sample_rate=48000'] : [];
+    const audioCodecArgs = hasAudio ? ['-c:a', 'aac', '-b:a', '128k'] : ['-an'];
+
+    await $`ffmpeg -v error -f lavfi -i ${videoInput} ${audioInputs} -t ${videoDurationSeconds} -c:v ${videoCodec} ${videoTagArgs} -pix_fmt yuv420p -movflags +faststart ${audioCodecArgs} ${target}`;
 }
