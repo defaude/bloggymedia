@@ -4,24 +4,34 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { ORIGINALS_DIR } from '../src/media/constants.js';
 import { findMediaFiles } from '../src/media/filesystem.js';
 
 describe('findMediaFiles', () => {
-    it('lists only top-level files and ignores subfolders', async () => {
+    it('returns only supported top-level media files and skips items with existing backups', async () => {
         const baseDir = await mkdtemp(join(tmpdir(), 'bloggymedia-files-'));
-        const topLevelFile = join(baseDir, 'bild.jpg');
+        const imageFile = join(baseDir, 'bild.jpg');
+        const videoFile = join(baseDir, 'clip.mp4');
+        const otherFile = join(baseDir, 'notes.txt');
         const subDir = join(baseDir, 'unterordner');
-        const nestedFile = join(subDir, 'video.mp4');
+        const nestedFile = join(subDir, 'nested.mov');
+        const originalsDir = join(baseDir, ORIGINALS_DIR);
 
-        await writeFile(topLevelFile, 'bild');
+        await writeFile(imageFile, 'bild');
+        await writeFile(videoFile, 'video');
+        await writeFile(otherFile, 'text');
         await mkdir(subDir);
-        await writeFile(nestedFile, 'video');
+        await writeFile(nestedFile, 'nested');
+        await mkdir(originalsDir);
+        await writeFile(join(originalsDir, 'clip.mp4'), 'backup');
 
         try {
             const files = await findMediaFiles(baseDir);
 
-            expect(files).toContain(topLevelFile);
-            expect(files).not.toContain(nestedFile);
+            expect(files).toContain(imageFile);
+            expect(files).not.toContain(videoFile); // skipped because backup exists
+            expect(files).not.toContain(nestedFile); // skipped because nested
+            expect(files).not.toContain(otherFile); // skipped because non-media
             expect(files).toHaveLength(1);
         } finally {
             await rm(baseDir, { recursive: true, force: true });

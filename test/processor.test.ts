@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 
@@ -8,90 +8,91 @@ vi.mock('../src/adapters/mogrify.js', () => ({
     resizeImage: vi.fn(),
 }));
 
+vi.mock('../src/adapters/ffmpeg.js', () => ({
+    transcodeVideo: vi.fn(),
+}));
+
+import { transcodeVideo } from '../src/adapters/ffmpeg.js';
 import { resizeImage } from '../src/adapters/mogrify.js';
+import { ORIGINALS_DIR } from '../src/media/constants.js';
 import * as processor from '../src/media/processor.js';
 
 const resizeImageMock = vi.mocked(resizeImage);
-
-describe('classifyFile', () => {
-    it('recognizes images, videos, and other files', () => {
-        expect(processor.classifyFile('/path/photo.JPG')).toBe('image');
-        expect(processor.classifyFile('/path/clip.Mp4')).toBe('video');
-        expect(processor.classifyFile('/path/readme.md')).toBe('other');
-    });
-});
-
-describe('handleImage', () => {
-    it('creates .originals, copies the file, and calls mogrify via the adapter', async () => {
-        const baseDir = await mkdtemp(join(tmpdir(), 'bloggymedia-image-'));
-        const imagePath = join(baseDir, 'image.png');
-        await writeFile(imagePath, 'pixel');
-
-        resizeImageMock.mockResolvedValue();
-
-        try {
-            await processor.handleImage({ path: imagePath, type: 'image' }, baseDir);
-
-            const originalsDir = join(baseDir, '.originals');
-            const originalsFiles = await readdir(originalsDir);
-            expect(originalsFiles).toContain('image.png');
-
-            const backupContent = await readFile(join(originalsDir, 'image.png'), 'utf8');
-            expect(backupContent).toBe('pixel');
-
-            expect(resizeImageMock).toHaveBeenCalledWith({ input: imagePath, maxSize: '1200x1200' });
-
-            // second run should not fail on EEXIST
-            await processor.handleImage({ path: imagePath, type: 'image' }, baseDir);
-        } finally {
-            await rm(baseDir, { recursive: true, force: true });
-            vi.clearAllMocks();
-        }
-    });
-});
-
-describe('handleVideo', () => {
-    it('logs a placeholder message', async () => {
-        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-        try {
-            await processor.handleVideo({ path: '/path/video.mov', type: 'video' });
-            expect(logSpy).toHaveBeenCalledWith('Video handler placeholder for video.mov');
-        } finally {
-            logSpy.mockRestore();
-        }
-    });
-});
+const transcodeVideoMock = vi.mocked(transcodeVideo);
 
 describe('processFiles', () => {
-    it('dispatches based on file type', async () => {
+    it('backs up and processes images and videos, skipping unsupported types', async () => {
         const baseDir = await mkdtemp(join(tmpdir(), 'bloggymedia-process-'));
         const imagePath = join(baseDir, 'photo.jpeg');
-        const videoPath = join(baseDir, 'clip.avi');
+        const videoPath = join(baseDir, 'clip.mp4');
         const otherPath = join(baseDir, 'notes.txt');
 
-        await mkdir(join(baseDir, '.originals'));
         await writeFile(imagePath, 'image');
         await writeFile(videoPath, 'video');
         await writeFile(otherPath, 'text');
 
-        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
         resizeImageMock.mockResolvedValue();
-
+        transcodeVideoMock.mockImplementation(async ({ input, output }) => {
+            await writeFile(output, `transcoded:${basename(input)}`);
+        });
         try {
-            await processor.processFiles({ workingDir: baseDir, filePaths: [imagePath, videoPath, otherPath] });
+            const summary = await processor.processFiles({
+                workingDir: baseDir,
+                filePaths: [imagePath, videoPath, otherPath],
+                toolCheck: async () => [],
+            });
 
-            const originalsFiles = await readdir(join(baseDir, '.originals'));
-            expect(originalsFiles).toContain('photo.jpeg');
-            expect(originalsFiles).not.toContain('clip.avi');
-            expect(originalsFiles).not.toContain('notes.txt');
+            const originalsFiles = await access(join(baseDir, ORIGINALS_DIR, 'photo.jpeg'));
+            expect(originalsFiles).toBeUndefined();
+
+            expect(summary.processed).toBe(2);
+            expect(summary.skipped).toBe(1);
+            expect(summary.failed).toBe(0);
 
             expect(resizeImageMock).toHaveBeenCalledWith({ input: imagePath, maxSize: '1200x1200' });
-            expect(logSpy).toHaveBeenCalledWith(`Video handler placeholder for ${basename(videoPath)}`);
+            expect(transcodeVideoMock).toHaveBeenCalled();
+            expect(summary.files.find(file => file.fileName === 'notes.txt')?.status).toBe('skipped');
         } finally {
             await rm(baseDir, { recursive: true, force: true });
-            logSpy.mockRestore();
             vi.clearAllMocks();
         }
+    });
+
+    it('skips files that already have backups', async () => {
+        const baseDir = await mkdtemp(join(tmpdir(), 'bloggymedia-backup-'));
+        const imagePath = join(baseDir, 'photo.jpeg');
+        const originals = join(baseDir, ORIGINALS_DIR);
+        await mkdir(originals);
+        await writeFile(imagePath, 'image');
+        await writeFile(join(originals, 'photo.jpeg'), 'backup');
+
+        resizeImageMock.mockResolvedValue();
+        try {
+            const summary = await processor.processFiles({ workingDir: baseDir, filePaths: [imagePath] });
+            expect(summary.processed).toBe(0);
+            expect(summary.skipped).toBe(1);
+            expect(summary.files[0]?.reason).toBe('backup-exists');
+            expect(resizeImageMock).not.toHaveBeenCalled();
+        } finally {
+            await rm(baseDir, { recursive: true, force: true });
+            vi.clearAllMocks();
+        }
+    });
+
+    it('throws MissingToolsError when required tools are absent', async () => {
+        const baseDir = await mkdtemp(join(tmpdir(), 'bloggymedia-missing-tools-'));
+        const imagePath = join(baseDir, 'photo.jpeg');
+        await writeFile(imagePath, 'image');
+
+        await expect(
+            processor.processFiles({
+                workingDir: baseDir,
+                filePaths: [imagePath],
+                toolCheck: async () => ['mogrify'],
+            })
+        ).rejects.toBeInstanceOf(processor.MissingToolsError);
+
+        await rm(baseDir, { recursive: true, force: true });
+        vi.clearAllMocks();
     });
 });

@@ -29,6 +29,6 @@ npm test
 
 ## Notes
 - Linting/formatting uses Biome only (no ESLint/Prettier).
-- Only files in the specified directory are processed; subdirectories are ignored.
-- Existing backups in `.originals/<filename>` cause files to be skipped and reported as skipped.
-- Missing required tools results in a clear error listing the tools and a non-zero exit.
+- Only files in the specified directory are processed; subdirectories are ignored. Runs are sequential by default.
+- Existing backups in `.originals/<filename>` cause files to be skipped and reported as skipped (files with backups are never overwritten).
+- Missing required tools results in a clear error listing the tools and a non-zero exit. For help, ensure `mogrify` (ImageMagick) and `ffmpeg` are on PATH.

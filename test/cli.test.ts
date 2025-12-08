@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../src/media/filesystem.js', () => ({
     findMediaFiles: vi.fn(),
@@ -10,51 +10,68 @@ vi.mock('../src/media/filesystem.js', () => ({
 
 vi.mock('../src/media/processor.js', () => ({
     processFiles: vi.fn(),
+    MissingToolsError: class MockMissingToolsError extends Error {
+        missingTools = ['mogrify'];
+    },
 }));
 
 import { cli } from '../src/cli.js';
 import { findMediaFiles } from '../src/media/filesystem.js';
-import { processFiles } from '../src/media/processor.js';
+import { MissingToolsError, processFiles } from '../src/media/processor.js';
 
 const findMediaFilesMock = vi.mocked(findMediaFiles);
 const processFilesMock = vi.mocked(processFiles);
 
+afterEach(() => {
+    vi.clearAllMocks();
+});
+
 describe('cli', () => {
-    it('uses process.cwd() as default and triggers processing', async () => {
+    it('uses process.cwd() as default, greets, and prints summary', async () => {
         const tempDir = await mkdtemp(join(tmpdir(), 'bloggymedia-cli-'));
         const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tempDir);
+        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
         findMediaFilesMock.mockResolvedValue(['image.jpg']);
-        processFilesMock.mockResolvedValue();
+        processFilesMock.mockResolvedValue({
+            processed: 1,
+            skipped: 0,
+            failed: 0,
+            files: [{ fileName: 'image.jpg', status: 'processed' }],
+        });
 
         try {
             await cli({});
 
             expect(cwdSpy).toHaveBeenCalled();
             expect(findMediaFilesMock).toHaveBeenCalledWith(tempDir);
-            expect(processFilesMock).toHaveBeenCalledWith({ workingDir: tempDir, filePaths: ['image.jpg'] });
+            expect(processFilesMock).toHaveBeenCalledWith({
+                workingDir: tempDir,
+                filePaths: ['image.jpg'],
+                onProgress: expect.any(Function),
+            });
+            expect(logSpy).toHaveBeenCalledWith('Starting bloggymedia...');
+            expect(logSpy).toHaveBeenCalledWith('--- Summary ---');
         } finally {
             cwdSpy.mockRestore();
+            logSpy.mockRestore();
             await rm(tempDir, { recursive: true, force: true });
             vi.clearAllMocks();
         }
     });
 
-    it('uses a provided workingDir', async () => {
+    it('reports missing tools via console error', async () => {
         const tempDir = await mkdtemp(join(tmpdir(), 'bloggymedia-cli-'));
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
         findMediaFilesMock.mockResolvedValue(['video.mp4']);
-        processFilesMock.mockResolvedValue();
+        processFilesMock.mockRejectedValue(new MissingToolsError(['mogrify']));
 
-        try {
-            await cli({ workingDir: tempDir });
+        await expect(cli({ workingDir: tempDir })).rejects.toBeInstanceOf(MissingToolsError);
+        expect(errorSpy).toHaveBeenCalledWith('Missing required tools: mogrify');
 
-            expect(findMediaFilesMock).toHaveBeenCalledWith(tempDir);
-            expect(processFilesMock).toHaveBeenCalledWith({ workingDir: tempDir, filePaths: ['video.mp4'] });
-        } finally {
-            await rm(tempDir, { recursive: true, force: true });
-            vi.clearAllMocks();
-        }
+        errorSpy.mockRestore();
+        await rm(tempDir, { recursive: true, force: true });
     });
 
     it('throws when the working directory does not exist', async () => {

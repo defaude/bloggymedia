@@ -26,8 +26,8 @@
 
 **Purpose**: Baseline project docs and build wiring
 
-- [ ] T001 Ensure quickstart lists prerequisites and Biome/tsdown commands (specs/001-media-cli/quickstart.md)
-- [ ] T002 Confirm package.json CLI bin/shebang and tsdown dist output (package.json)
+- [X] T001 Ensure quickstart lists prerequisites and Biome/tsdown commands (specs/001-media-cli/quickstart.md)
+- [X] T002 Confirm package.json CLI bin/shebang and tsdown dist output (package.json)
 
 ---
 
@@ -37,13 +37,13 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T003 Define media constants (bounds, supported extensions, flat-scope paths) in src/media/constants.ts
-- [ ] T004 Implement upfront tool availability check (mogrify, ffmpeg) with clear errors and non-zero exit in src/media/processor.ts
-- [ ] T005 Implement flat-directory discovery helper (ignore subdirs/non-media, skip existing backups) in src/media/filesystem.ts
-- [ ] T006 Add reusable flat-folder fixtures (images, videos, non-media, existing backups) in fixtures/
-- [ ] T007 Add test working-dir helper to copy fixtures per test run without mutation in test/helpers/workdir.ts
-- [ ] T008 [P] Add Vitest adapter tests for mogrify (metadata stripping, 1200px bound) in test/processor.test.ts
-- [ ] T009 [P] Add Vitest adapter tests for ffmpeg (720p bound, metadata removal, orientation) and missing-tool fail-fast path in test/processor.test.ts
+- [X] T003 Define media constants (bounds, supported extensions, flat-scope paths) in src/media/constants.ts
+- [X] T004 Implement upfront tool availability check (mogrify, ffmpeg) with clear errors and non-zero exit in src/media/processor.ts
+- [X] T005 Implement flat-directory discovery helper (ignore subdirs/non-media, skip existing backups) in src/media/filesystem.ts
+- [X] T006 Add reusable flat-folder fixtures (images, videos, non-media, existing backups) in fixtures/
+- [X] T007 Add test working-dir helper to copy fixtures per test run without mutation in test/helpers/workdir.ts
+- [X] T008 [P] Add Vitest adapter tests for mogrify (metadata stripping, 1200px bound) in test/adapters.test.ts
+- [X] T009 [P] Add Vitest adapter tests for ffmpeg (720p bound, metadata removal, orientation) and missing-tool fail-fast path in test/adapters.test.ts
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -57,16 +57,16 @@
 
 ### Tests for User Story 1
 
-- [ ] T010 [P] [US1] Add Vitest for default run (CWD) with mixed media/non-media and existing backups in test/cli.test.ts
+- [X] T010 [P] [US1] Add Vitest for default run (CWD) with mixed media/non-media and existing backups in test/cli.test.ts
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Wire CLI default target to current working directory with validation in src/cli.ts
-- [ ] T012 [US1] Ensure discovery uses flat-scope helper and skips existing backups before processing in src/media/filesystem.ts
-- [ ] T013 [US1] Implement `.originals` backup creation and skip-if-backup-exists logic in src/media/processor.ts
-- [ ] T014 [P] [US1] Implement image optimization (strip metadata, cap longest side at 1200px) via mogrify adapter in src/media/processor.ts
-- [ ] T015 [P] [US1] Implement video optimization (strip metadata, H.264 ≤720p, preserve orientation) via ffmpeg adapter in src/media/processor.ts
-- [ ] T016 [US1] Enforce sequential processing loop and reconcile processed/skipped/failed counts in src/media/processor.ts
+- [X] T011 [US1] Wire CLI default target to current working directory with validation in src/cli.ts
+- [X] T012 [US1] Ensure discovery uses flat-scope helper and skips existing backups before processing in src/media/filesystem.ts
+- [X] T013 [US1] Implement `.originals` backup creation and skip-if-backup-exists logic in src/media/processor.ts
+- [X] T014 [P] [US1] Implement image optimization (strip metadata, cap longest side at 1200px) via mogrify adapter in src/media/processor.ts
+- [X] T015 [P] [US1] Implement video optimization (strip metadata, H.264 ≤720p, preserve orientation) via ffmpeg adapter in src/media/processor.ts
+- [X] T016 [US1] Enforce sequential processing loop and reconcile processed/skipped/failed counts in src/media/processor.ts
 
 **Checkpoint**: User Story 1 fully functional and testable independently
 
@@ -80,12 +80,12 @@
 
 ### Tests for User Story 2
 
-- [ ] T017 [P] [US2] Add Vitest for target path parsing/validation (valid folder, invalid path) in test/cli.test.ts
+- [X] T017 [P] [US2] Add Vitest for target path parsing/validation (valid folder, invalid path) in test/cli.test.ts
 
 ### Implementation for User Story 2
 
-- [ ] T018 [US2] Add optional target path argument parsing with default fallback to CWD in src/cli.ts
-- [ ] T019 [US2] Add target path existence/flat-scope validation and error messaging in src/media/filesystem.ts
+- [X] T018 [US2] Add optional target path argument parsing with default fallback to CWD in src/cli.ts
+- [X] T019 [US2] Add target path existence/flat-scope validation and error messaging in src/media/filesystem.ts
 
 **Checkpoint**: User Stories 1 AND 2 functional and independently testable
 
@@ -99,13 +99,13 @@
 
 ### Tests for User Story 3
 
-- [ ] T020 [P] [US3] Add Vitest for progress output and final summary counts/filenames (including failed file) in test/cli.test.ts
+- [X] T020 [P] [US3] Add Vitest for progress output and final summary counts/filenames (including failed file) in test/cli.integration.test.ts
 
 ### Implementation for User Story 3
 
-- [ ] T021 [US3] Implement live progress display (current filename, processed/skipped/failed/remaining counts, surfaced errors) in src/cli.ts
-- [ ] T022 [US3] Implement final summary showing processed/skipped/failed counts and filenames only in src/cli.ts
-- [ ] T023 [US3] Log per-file errors, continue processing, and include failures in summary in src/media/processor.ts
+- [X] T021 [US3] Implement live progress display (current filename, processed/skipped/failed/remaining counts, surfaced errors) in src/cli.ts
+- [X] T022 [US3] Implement final summary showing processed/skipped/failed counts and filenames only in src/cli.ts
+- [X] T023 [US3] Log per-file errors, continue processing, and include failures in summary in src/media/processor.ts
 
 **Checkpoint**: All user stories independently functional
 
