@@ -29,6 +29,7 @@ description: "Task list template for feature implementation"
 
 - Include tasks for non-destructive handling (backup to `.originals`, idempotent reruns, bounded working directory writes).
 - External tooling tasks MUST flow through zx-based adapters in `src/adapters`; add work items to mock adapters in tests.
+- Code style/lint: Biome-only; gate on `npm run check`, use `npm run check-fix` for safe autofix, flag any use of `npm run check-fix-unsafe` for review; do not add ESLint/Prettier. Builds emit to `dist/` via tsdown (no `build/` folder).
 - Add Vitest tasks for CLI validation, adapter interactions, and media bound enforcement; flag integration runs explicitly.
 - Capture CLI UX/progress tasks so users see counts of backed-up/processed files and actionable errors.
 

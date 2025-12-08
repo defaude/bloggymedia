@@ -17,6 +17,7 @@
 
 - Preserve originals in `.originals`, never overwrite backups on rerun.
 - Use zx-based adapters in `src/adapters` for `mogrify`/`ffmpeg`; no direct shelling in core.
+- Code style/lint is Biome-only; gate on `npm run check`, use `npm run check-fix` for safe autofix, flag any `npm run check-fix-unsafe` runs for review; tsdown builds emit to `dist/` (no `build/` folder).
 - Enforce media bounds: images ≤1200px with metadata removed; videos H.264 ≤720p with metadata removed.
 - Fail fast when required tools are missing.
 - CLI must show progress and final summaries with counts and filenames (no full paths).

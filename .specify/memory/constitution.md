@@ -1,10 +1,10 @@
 <!--
 Sync Impact Report
-- Version: 0.0.0 (template) -> 1.0.0
-- Defined principles: Safe Media Handling (Non-Destructive); Adapter-Isolated Tooling (zx); Typed Node 22 Delivery; Test-First Coverage (Vitest); CLI UX & Progress Transparency
-- Added sections: Technical Standards & Stack; Development Workflow & Quality Gates
+- Version: 1.0.0 -> 1.1.0
+- Modified principles: Typed Node 22 Delivery (Biome-only lint/format; tsdown dist-only outputs)
+- Added sections: None
 - Removed sections: None
-- Templates requiring updates: ✅ .specify/templates/plan-template.md; ✅ .specify/templates/spec-template.md; ✅ .specify/templates/tasks-template.md
+- Templates requiring updates: ✅ .specify/templates/plan-template.md; ✅ .specify/templates/spec-template.md; ✅ .specify/templates/tasks-template.md; ⚠️ .specify/templates/commands/ (no command templates present)
 - Follow-up TODOs: None
 -->
 
@@ -27,8 +27,9 @@ Rationale: Keeps core logic portable, testable, and resilient to tool changes.
 ### Typed Node 22 Delivery
 - Runtime target is Node 22 with ESM; TypeScript remains in `strict` mode using shared configs (e.g., `@tsconfig/node22`).
 - New code avoids untyped `any` and dynamic imports; public surfaces declare explicit types for inputs/outputs and errors.
-- Builds use `tsdown`; quality gates include `npm run check` before merge to ensure type and lint integrity.
-Rationale: Guarantees predictable behavior and compatibility with the supported runtime.
+- Linting/formatting is Biome-only (`npm run check` for analysis, `npm run check-fix` for safe autofix, `npm run check-fix-unsafe` only with review due to behavioral risk); do not introduce ESLint/Prettier.
+- Builds use `tsdown` and emit to `dist/` only; no `build/` directory is generated or relied upon.
+Rationale: Guarantees predictable behavior, consistent formatting, and compatibility with the supported runtime.
 
 ### Test-First Coverage (Vitest)
 - Features and fixes land with Vitest coverage for CLI validation, media classification, adapter calls, and error paths.
@@ -43,16 +44,16 @@ Rationale: Prevents regressions in media safety and adapter boundaries.
 Rationale: Clear feedback builds trust and keeps batch runs debuggable.
 
 ## Technical Standards & Stack
-- Stack: Node 22, TypeScript 5.9+, ESM; build via `tsdown`, package entry at `dist/index.js` with shebang.
+- Stack: Node 22, TypeScript 5.9+, ESM; tsdown builds emit to `dist/` (`bin` is `dist/index.js` with shebang); avoid adding a `build/` pipeline.
 - External commands run through zx in adapters; prefer well-maintained libraries over bespoke code where suitable.
+- Linting/formatting: Biome is the sole tool; `npm run check` is the gate, `npm run check-fix` is allowed for safe autofix, and `npm run check-fix-unsafe` is opt-in with manual review to prevent behavior drift; do not add ESLint/Prettier.
 - Media bounds default to 1200x1200 for images and 720p/H.264 for video; keep these values centralized and configurable.
 - File operations are limited to the target working directory; backups live in `.originals` and must not be overwritten on rerun.
-- Code style and hygiene checked with `npm run check` (tsc + biome); CI must block merges on failures.
 
 ## Development Workflow & Quality Gates
 - Planning includes a Constitution Check covering non-destructive handling, adapter isolation, Node 22/TypeScript compliance, test coverage, and CLI UX expectations.
 - Implementation uses zx adapters for all tool invocations and documents any bespoke logic when a library was viable.
-- `npm run check` and `npm run test` must pass before review; reviewers verify no direct shelling out outside adapters and that tests cover error paths.
+- `npm run check` and `npm run test` must pass before review; apply `npm run check-fix` for safe autofixes and use `npm run check-fix-unsafe` only when changes are reviewed for behavioral risk; reviewers verify no direct shelling out outside adapters and that tests cover error paths.
 - Exceptions to principles require a recorded justification with an expiry and follow-up task to return to compliance.
 
 ## Governance
@@ -61,4 +62,4 @@ Rationale: Clear feedback builds trust and keeps batch runs debuggable.
 - Versioning: MAJOR for breaking governance or principle removals; MINOR for new principles/sections or materially expanded rules; PATCH for clarifications and wording-only fixes.
 - Compliance: Feature specs/plans must satisfy the Constitution Check; PR reviewers confirm adherence and reject changes that bypass adapters, testing, or safety bounds.
 
-**Version**: 1.0.0 | **Ratified**: 2025-12-07 | **Last Amended**: 2025-12-07
+**Version**: 1.1.0 | **Ratified**: 2025-12-07 | **Last Amended**: 2025-12-08

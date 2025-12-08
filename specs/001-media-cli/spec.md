@@ -78,7 +78,7 @@ Track progress during processing and receive a clear summary of results.
 
 ## Requirements *(mandatory)*
 
-**Constitution alignment**: Preserve originals via `.originals`, allow idempotent reruns that do not overwrite existing backups, keep external tooling isolated to adapters, honor Node 22 + TypeScript `strict`, enforce media bounds (images ≤1200x1200; videos ≤720p/H.264), fail fast when required external tools are missing, limit processing strictly to files in the target directory (no subdirectory traversal), and maintain clear CLI UX/progress visibility. Call out any intentional deviations.
+**Constitution alignment**: Preserve originals via `.originals`, allow idempotent reruns that do not overwrite existing backups, keep external tooling isolated to adapters, honor Node 22 + TypeScript `strict` with tsdown builds to `dist/` only, use Biome for lint/format (`npm run check`; `npm run check-fix` for safe autofix; `npm run check-fix-unsafe` flagged for review; no ESLint/Prettier), enforce media bounds (images ≤1200x1200; videos ≤720p/H.264), fail fast when required external tools are missing, limit processing strictly to files in the target directory (no subdirectory traversal), and maintain clear CLI UX/progress visibility. Call out any intentional deviations.
 
 ### Functional Requirements
 
