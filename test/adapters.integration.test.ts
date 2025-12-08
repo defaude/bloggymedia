@@ -15,6 +15,15 @@ async function ensureToolAvailable(tool: string) {
     }
 }
 
+function parseFrameRate(value: string): number {
+    const [numerator, denominator] = value.split('/').map(part => Number.parseFloat(part));
+    if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) {
+        return Number.NaN;
+    }
+
+    return numerator / denominator;
+}
+
 describe.sequential('adapter integration', () => {
     it('resizes images using mogrify', async () => {
         await ensureToolAvailable('mogrify');
@@ -60,6 +69,30 @@ describe.sequential('adapter integration', () => {
 
             const outputStats = await stat(output);
             expect(outputStats.size).toBeGreaterThan(0);
+        } finally {
+            await rm(workdir, { recursive: true, force: true });
+        }
+    }, 20000);
+
+    it('reduces framerate to 24fps when input is higher', async () => {
+        await ensureToolAvailable('ffmpeg');
+        await ensureToolAvailable('ffprobe');
+
+        const workdir = await createWorkingDirFromFixtures(['vid-50fps-640x480-h264-noaudio.mp4']);
+        const input = join(workdir, 'vid-50fps-640x480-h264-noaudio.mp4');
+        const output = join(workdir, 'output.mp4');
+
+        try {
+            await transcodeVideo({ input, output, maxHeight: 720 });
+
+            const metadata =
+                await $`ffprobe -v error -select_streams v:0 -show_entries stream=avg_frame_rate -of json ${output}`;
+            const { streams } = JSON.parse(metadata.stdout) as { streams: Array<{ avg_frame_rate: string }> };
+            const [videoStream] = streams;
+            const fps = parseFrameRate(videoStream.avg_frame_rate);
+
+            expect(fps).toBeGreaterThanOrEqual(23.9);
+            expect(fps).toBeLessThanOrEqual(24.1);
         } finally {
             await rm(workdir, { recursive: true, force: true });
         }

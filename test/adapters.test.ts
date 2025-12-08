@@ -56,6 +56,7 @@ describe('adapters/ffmpeg', () => {
         expect(command).toContain('ffmpeg -hide_banner -loglevel warning');
         expect(command).toContain('-i /tmp/input.mov');
         expect(command).toContain("scale='-2:min(ih\\,720)'");
+        expect(command).toContain('-r 24');
         expect(command).toContain('-c:v libx264');
         expect(command).toContain('-c:a aac');
         expect(command).toContain('-map_metadata -1');

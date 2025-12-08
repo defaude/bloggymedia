@@ -77,7 +77,7 @@
 
 ## Requirements *(mandatory)*
 
-**Constitution alignment**: Capture non-destructive handling (backups in `.originals`, idempotent reruns), adapter-only external tooling (zx in `src/adapters`), Node 22 + TypeScript `strict` with tsdown builds to `dist/` (no `build/`), Biome-managed lint/format commands (`npm run check`; `npm run check-fix` for safe autofix; `npm run check-fix-unsafe` flagged for review; no ESLint/Prettier), default media bounds (images ≤1200x1200; videos ≤720p/H.264) and CLI UX/progress expectations. State when deviations are intentional.
+**Constitution alignment**: Capture non-destructive handling (backups in `.originals`, idempotent reruns), adapter-only external tooling (zx in `src/adapters`), Node 22 + TypeScript `strict` with tsdown builds to `dist/` (no `build/`), Biome-managed lint/format commands (`npm run check`; `npm run check-fix` for safe autofix; `npm run check-fix-unsafe` flagged for review; no ESLint/Prettier), default media bounds (images ≤1200x1200; videos ≤720p/H.264 with outputs capped at 24fps via downsampling) and CLI UX/progress expectations. State when deviations are intentional.
 
 <!--
   ACTION REQUIRED: The content in this section represents placeholders.

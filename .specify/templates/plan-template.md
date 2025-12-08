@@ -34,8 +34,8 @@
 - Non-destructive plan: backups to `.originals`, idempotent reruns, no writes outside the working directory.
 - Tooling boundaries: all external binaries invoked via zx-based adapters in `src/adapters` (no direct shelling out in core).
 - Stack compliance: Node 22 + TypeScript `strict`, tsdown build emitting to `dist/` (no `build/`), Biome-managed lint/format (`npm run check`; `npm run check-fix` for safe autofix; `npm run check-fix-unsafe` only with review; no ESLint/Prettier), explicit types for CLI surfaces and adapters.
-- Test plan: Vitest coverage for CLI validation, adapter interactions, media bounds, and error paths; integration runs are opt-in.
-- UX expectations: progress/output describes backups and processing counts; default media bounds centralized and validated.
+- Test plan: Vitest coverage for CLI validation, adapter interactions, media bounds (including 24fps output cap), and error paths; integration runs are opt-in.
+- UX expectations: progress/output describes backups and processing counts; default media bounds (images ≤1200x1200, videos ≤720p/H.264 with outputs ≤24fps) centralized and validated.
 
 ## Project Structure
 
