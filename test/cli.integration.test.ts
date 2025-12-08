@@ -55,8 +55,8 @@ describe('cli integration', () => {
             expect(logs).toContain('Processed: 2');
             expect(logs).toContain('Skipped:   0');
             expect(logs).toContain('Failed:    0');
-            expect(logs).toMatch(/\\[processed\\] photo\\.jpg/);
-            expect(logs).toMatch(/\\[processed\\] clip\\.mp4/);
+            expect(logs).toMatch(/\[processed] photo\.jpg/);
+            expect(logs).toMatch(/\[processed] clip\.mp4/);
         } finally {
             toolSpy.mockRestore();
             logSpy.mockRestore();
@@ -84,8 +84,8 @@ describe('cli integration', () => {
             const logs = logSpy.mock.calls.flat().join('\n');
             expect(logs).toContain('Processed: 1');
             expect(logs).toContain('Failed:    1');
-            expect(logs).toMatch(/\\[failed\\] clip\\.mp4/);
-            expect(logs).toMatch(/\\[processed\\] photo\\.jpg/);
+            expect(logs).toMatch(/\[failed] clip\.mp4/);
+            expect(logs).toMatch(/\[processed] photo\.jpg/);
         } finally {
             toolSpy.mockRestore();
             logSpy.mockRestore();

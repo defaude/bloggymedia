@@ -1,5 +1,5 @@
-import { access, cp, constants as fsConstants, mkdir, rename } from 'node:fs/promises';
-import { basename, dirname, join } from 'node:path';
+import { access, cp, constants as fsConstants, mkdir, rename, rm } from 'node:fs/promises';
+import { basename, dirname, extname, join } from 'node:path';
 
 import { $ } from 'zx';
 
@@ -55,7 +55,7 @@ async function checkTool(binary: string): Promise<boolean> {
 }
 
 export async function detectMissingTools(): Promise<string[]> {
-    const required = ['mogrify', 'ffmpeg'];
+    const required = ['mogrify', 'ffmpeg', 'ffprobe'];
     const missing: string[] = [];
 
     for (const tool of required) {
@@ -95,16 +95,34 @@ async function processImage(filePath: string) {
 
 async function processVideo(filePath: string) {
     const directory = dirname(filePath);
-    const fileName = basename(filePath);
-    const tempOutput = join(directory, `${fileName}.tmp`);
+    const extension = extname(filePath) || '.mp4';
+    const baseName = basename(filePath, extension);
+    const tempOutput = join(directory, `${baseName}.tmp${extension}`);
 
-    await transcodeVideo({
-        input: filePath,
-        output: tempOutput,
-        maxHeight: VIDEO_MAX_HEIGHT,
-    });
+    try {
+        await transcodeVideo({
+            input: filePath,
+            output: tempOutput,
+            maxHeight: VIDEO_MAX_HEIGHT,
+        });
 
-    await rename(tempOutput, filePath);
+        await rename(tempOutput, filePath);
+    } catch (error) {
+        await rm(tempOutput, { force: true }).catch(() => {});
+        throw error;
+    }
+}
+
+async function restoreFailedProcessing(originalsDir: string, destination: string, fileName: string) {
+    const backupPath = join(originalsDir, fileName);
+    try {
+        await access(backupPath, fsConstants.F_OK);
+    } catch {
+        return;
+    }
+
+    await cp(backupPath, destination, { force: true });
+    await rm(backupPath, { force: true });
 }
 
 export async function processFiles({
@@ -177,7 +195,13 @@ export async function processFiles({
                 remaining,
             });
         } catch (error: unknown) {
-            const reason = error instanceof Error ? error.message : 'Unknown error';
+            let reason = error instanceof Error ? error.message : 'Unknown error';
+            try {
+                await restoreFailedProcessing(originalsDir, filePath, fileName);
+            } catch (restoreError) {
+                const restoreReason = restoreError instanceof Error ? restoreError.message : 'Unknown restore error';
+                reason = `${reason} (restore failed: ${restoreReason})`;
+            }
             totals.failed += 1;
             totals.files.push({ fileName, status: 'failed', reason });
             onProgress?.({

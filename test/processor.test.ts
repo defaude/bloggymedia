@@ -1,4 +1,4 @@
-import { access, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 
@@ -94,5 +94,39 @@ describe('processFiles', () => {
 
         await rm(baseDir, { recursive: true, force: true });
         vi.clearAllMocks();
+    });
+
+    it('restores originals and removes backups when processing fails', async () => {
+        const baseDir = await mkdtemp(join(tmpdir(), 'bloggymedia-restore-'));
+        const videoPath = join(baseDir, 'clip.mp4');
+        const originals = join(baseDir, ORIGINALS_DIR);
+        const originalContent = 'original video content';
+
+        await writeFile(videoPath, originalContent);
+
+        resizeImageMock.mockResolvedValue();
+        transcodeVideoMock.mockImplementation(async ({ input }) => {
+            await writeFile(input, 'corrupted');
+            throw new Error('transcode failure');
+        });
+
+        try {
+            const summary = await processor.processFiles({
+                workingDir: baseDir,
+                filePaths: [videoPath],
+                toolCheck: async () => [],
+            });
+
+            expect(summary.failed).toBe(1);
+            expect(summary.files[0]?.status).toBe('failed');
+
+            const restoredContent = await readFile(videoPath, 'utf8');
+            expect(restoredContent).toBe(originalContent);
+
+            await expect(access(join(originals, 'clip.mp4'))).rejects.toThrow();
+        } finally {
+            await rm(baseDir, { recursive: true, force: true });
+            vi.clearAllMocks();
+        }
     });
 });
