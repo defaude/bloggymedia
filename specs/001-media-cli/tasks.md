@@ -1,10 +1,8 @@
 # Tasks: Bloggymedia CLI Experience
 
-**Input**: Design documents from `/specs/001-media-cli/`
-**Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
-
-**Tests**: Include targeted Vitest tasks where they add confidence for critical flows (CLI behavior, adapter interactions, media bounds).
-
+**Input**: Design documents from `/specs/001-media-cli/`  
+**Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/, quickstart.md  
+**Tests**: Vitest coverage is required by the constitution (CLI behavior, adapter interactions, media bounds, missing tools, progress/summary).  
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
 ## Format: `[ID] [P?] [Story] Description`
@@ -15,21 +13,21 @@
 
 ## Constitution Alignment
 
-- Preserve originals in `.originals`, never overwrite backups on rerun.
+- Preserve originals in `.originals`, never overwrite backups on rerun; flat target directory only.
 - Use zx-based adapters in `src/adapters` for `mogrify`/`ffmpeg`; no direct shelling in core.
 - Code style/lint is Biome-only; gate on `npm run check`, use `npm run check-fix` for safe autofix, flag any `npm run check-fix-unsafe` runs for review; tsdown builds emit to `dist/` (no `build/` folder).
 - Enforce media bounds: images ≤1200px with metadata removed; videos H.264 ≤720p with metadata removed.
-- Fail fast when required tools are missing.
+- Fail fast when required tools are missing; process sequentially for predictable progress.
 - CLI must show progress and final summaries with counts and filenames (no full paths).
 
 ---
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-**Purpose**: Project initialization and baseline docs
+**Purpose**: Baseline project docs and build wiring
 
-- [ ] T001 Document Node 22 and mogrify/ffmpeg prerequisites plus run/check commands in specs/001-media-cli/quickstart.md
-- [ ] T002 Confirm CLI bin mapping and shebang expectations in package.json (bin dist/index.js) for Node 22 ESM CLI
+- [ ] T001 Ensure quickstart lists prerequisites and Biome/tsdown commands (specs/001-media-cli/quickstart.md)
+- [ ] T002 Confirm package.json CLI bin/shebang and tsdown dist output (package.json)
 
 ---
 
@@ -39,11 +37,11 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T003 Define shared media bounds, supported extensions, and flat-scope constants in src/media/constants.ts
-- [ ] T004 Implement tool availability check (mogrify, ffmpeg) with clear errors and non-zero exit path in src/media/processor.ts
-- [ ] T005 Implement flat-directory file discovery (ignore subdirs, non-media) helper in src/media/filesystem.ts
-- [ ] T006 Add reusable flat-folder media fixtures for tests (images, videos, non-media, existing backups) in fixtures/
-- [ ] T007 Add test-working-dir setup that copies needed samples from fixtures/ per test run without mutating fixtures in test/helpers/
+- [ ] T003 Define media constants (bounds, supported extensions, flat-scope paths) in src/media/constants.ts
+- [ ] T004 Implement upfront tool availability check (mogrify, ffmpeg) with clear errors and non-zero exit in src/media/processor.ts
+- [ ] T005 Implement flat-directory discovery helper (ignore subdirs/non-media, skip existing backups) in src/media/filesystem.ts
+- [ ] T006 Add reusable flat-folder fixtures (images, videos, non-media, existing backups) in fixtures/
+- [ ] T007 Add test working-dir helper to copy fixtures per test run without mutation in test/helpers/workdir.ts
 - [ ] T008 [P] Add Vitest adapter tests for mogrify (metadata stripping, 1200px bound) in test/processor.test.ts
 - [ ] T009 [P] Add Vitest adapter tests for ffmpeg (720p bound, metadata removal, orientation) and missing-tool fail-fast path in test/processor.test.ts
 
@@ -53,21 +51,22 @@
 
 ## Phase 3: User Story 1 - Optimize current folder (Priority: P1) 🎯 MVP
 
-**Goal**: Default `bloggymedia` run on current directory backs up media to `.originals`, optimizes images/videos with bounds and metadata removal, skips files with existing backups, ignores subdirectories/non-media.
+**Goal**: Default `bloggymedia` run on current directory backs up media to `.originals`, optimizes images/videos with bounds and metadata removal, skips files with existing backups, ignores subdirectories/non-media, and runs sequentially.
 
 **Independent Test**: Run `node dist/index.js` in a flat folder containing mixed media/non-media plus some preexisting `.originals` files; verify backups, optimized outputs, skips, and no changes outside target folder.
 
 ### Tests for User Story 1
 
-- [ ] T010 [P] [US1] Add Vitest coverage for default run (CWD) with mixed media/non-media and existing backups in test/cli.test.ts
+- [ ] T010 [P] [US1] Add Vitest for default run (CWD) with mixed media/non-media and existing backups in test/cli.test.ts
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Wire CLI default target to current working directory in src/cli.ts
-- [ ] T012 [US1] Implement flat-directory media discovery and non-media/backup skipping in src/media/filesystem.ts
-- [ ] T013 [US1] Ensure `.originals` backup creation and skip-if-backup-exists logic before processing in src/media/processor.ts
-- [ ] T014 [P] [US1] Implement image optimization (strip metadata, cap longest side at 1200px) via mogrify adapter calls in src/media/processor.ts
-- [ ] T015 [P] [US1] Implement video optimization (strip metadata, H.264 ≤720p, preserve orientation) via ffmpeg adapter calls in src/media/processor.ts
+- [ ] T011 [US1] Wire CLI default target to current working directory with validation in src/cli.ts
+- [ ] T012 [US1] Ensure discovery uses flat-scope helper and skips existing backups before processing in src/media/filesystem.ts
+- [ ] T013 [US1] Implement `.originals` backup creation and skip-if-backup-exists logic in src/media/processor.ts
+- [ ] T014 [P] [US1] Implement image optimization (strip metadata, cap longest side at 1200px) via mogrify adapter in src/media/processor.ts
+- [ ] T015 [P] [US1] Implement video optimization (strip metadata, H.264 ≤720p, preserve orientation) via ffmpeg adapter in src/media/processor.ts
+- [ ] T016 [US1] Enforce sequential processing loop and reconcile processed/skipped/failed counts in src/media/processor.ts
 
 **Checkpoint**: User Story 1 fully functional and testable independently
 
@@ -81,12 +80,12 @@
 
 ### Tests for User Story 2
 
-- [ ] T016 [P] [US2] Add Vitest for target path parsing/validation (valid folder, invalid path) in test/cli.test.ts
+- [ ] T017 [P] [US2] Add Vitest for target path parsing/validation (valid folder, invalid path) in test/cli.test.ts
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] Add optional target path argument parsing with default fallback to CWD in src/cli.ts
-- [ ] T018 [US2] Add target path existence/flat-scope validation and error messaging in src/media/filesystem.ts
+- [ ] T018 [US2] Add optional target path argument parsing with default fallback to CWD in src/cli.ts
+- [ ] T019 [US2] Add target path existence/flat-scope validation and error messaging in src/media/filesystem.ts
 
 **Checkpoint**: User Stories 1 AND 2 functional and independently testable
 
@@ -100,13 +99,13 @@
 
 ### Tests for User Story 3
 
-- [ ] T019 [P] [US3] Add Vitest for progress output and final summary counts/filenames (including failed file) in test/cli.test.ts
+- [ ] T020 [P] [US3] Add Vitest for progress output and final summary counts/filenames (including failed file) in test/cli.test.ts
 
 ### Implementation for User Story 3
 
-- [ ] T020 [US3] Implement live progress display (current filename, processed/skipped/failed/remaining counts, surfaced errors) in src/cli.ts
-- [ ] T021 [US3] Implement final summary showing processed/skipped/failed counts and filenames only in src/cli.ts
-- [ ] T022 [US3] Log per-file errors, continue processing, and include failures in summary in src/media/processor.ts
+- [ ] T021 [US3] Implement live progress display (current filename, processed/skipped/failed/remaining counts, surfaced errors) in src/cli.ts
+- [ ] T022 [US3] Implement final summary showing processed/skipped/failed counts and filenames only in src/cli.ts
+- [ ] T023 [US3] Log per-file errors, continue processing, and include failures in summary in src/media/processor.ts
 
 **Checkpoint**: All user stories independently functional
 
@@ -116,8 +115,8 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T023 [P] Update README.md CLI usage to note flat-scope processing, backup skipping, and metadata removal for images/videos
-- [ ] T024 [P] Add troubleshooting notes for missing tools and skipped files to specs/001-media-cli/quickstart.md
+- [ ] T024 [P] Update README.md to note flat-scope processing, sequential runs, backup skipping, and metadata removal expectations in README.md
+- [ ] T025 [P] Add troubleshooting notes for missing tools and skipped files to specs/001-media-cli/quickstart.md
 
 ---
 
@@ -132,44 +131,36 @@
 
 - US1 (P1): Depends on Foundational; no other story dependencies
 - US2 (P2): Depends on Foundational; independent of US1 except shared helpers
-- US3 (P3): Depends on Foundational; consumes outputs from US1/US2 behaviors but should remain independently testable
+- US3 (P3): Depends on Foundational; consumes outputs from US1/US2 behaviors but remains independently testable
 
 ### Within Each User Story
 
-- Tests (if included) should be authored before implementations
+- Tests should be authored before implementations
 - Discovery/validation before processing; backups before optimization
 - Image/video optimization can proceed in parallel once backups are in place
 - Summary/progress wiring follows processing logic
 
 ### Parallel Opportunities
 
-- Marked [P] tasks across Setup/Foundational (T008, T009) can run concurrently; T003 and T006–T007 are serial with shared helpers.
+- Marked [P] tasks across Foundational (T008, T009) can run concurrently; T003–T007 are serial with shared helpers.
 - Within US1, T014/T015 can run in parallel after T013.
-- Tests marked [P] (T010, T016, T019) can run independently of implementation tasks.
+- Tests marked [P] (T010, T017, T020) can run independently of implementation tasks.
 - US2 and US3 workstreams can proceed in parallel after Foundational if staffing allows, respecting shared file touch points.
 
 ---
 
-## Parallel Example: User Story 1
+## Parallel Examples
 
 ```bash
-# Parallelizable tasks once backups and discovery are in place:
+# User Story 1: Parallelizable once backups exist
 T014 [P] [US1] Implement image optimization in src/media/processor.ts
 T015 [P] [US1] Implement video optimization in src/media/processor.ts
-```
 
-## Parallel Example: User Story 2
+# User Story 2: Test authoring before wiring argument parsing
+T017 [P] [US2] Add Vitest for target path parsing/validation in test/cli.test.ts
 
-```bash
-# Test authoring can proceed before wiring the CLI argument:
-T016 [P] [US2] Add Vitest for target path parsing/validation in test/cli.test.ts
-```
-
-## Parallel Example: User Story 3
-
-```bash
-# Progress/summary test can be prepared while wiring output handling:
-T019 [P] [US3] Add Vitest for progress output and final summary in test/cli.test.ts
+# User Story 3: Progress/summary test while wiring output handling
+T020 [P] [US3] Add Vitest for progress output and final summary in test/cli.test.ts
 ```
 
 ---
