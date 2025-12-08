@@ -1,7 +1,25 @@
-.idea/
+# Dependencies and builds
 node_modules/
 dist/
+coverage/
 
+# Logs and env
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.env
+.env.*
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.tmp
+*.swp
+
+# Fixtures and temp workdirs
 fixtures/*
 fixtures/!fixtures.json
 test-working-dir/
