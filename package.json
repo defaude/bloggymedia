@@ -8,6 +8,8 @@
     "scripts": {
         "build": "tsdown",
         "check": "tsc && biome check",
+        "check-fix": "biome check --fix",
+        "check-fix-unsafe": "biome check --fix --unsafe",
         "generate-fixtures": "node scripts/generate-fixtures.js",
         "test": "vitest run",
         "test-watch": "vitest"
