@@ -7,6 +7,10 @@
 
 ## Clarifications
 
+### Session 2025-12-08
+
+- Q: Should processing run sequentially or allow parallelism? → A: Process files sequentially (one at a time).
+
 ### Session 2025-12-07
 
 - Q: How should the CLI behave if required external tools (e.g., mogrify/ffmpeg) are missing? → A: Fail fast with a concise message listing missing tools and exit non-zero.
@@ -92,6 +96,7 @@ Track progress during processing and receive a clear summary of results.
 - **FR-008**: CLI MUST provide a completion summary that lists counts of processed images/videos, skipped/failed items, and the filenames processed (without full paths), relying on user knowledge that backups live under `.originals/<filename>` and optimized files retain the original filename in place.
 - **FR-009**: When a file cannot be processed, the system MUST log the issue, continue with remaining files, and include the failure in the final summary.
 - **FR-010**: CLI MUST verify availability of required external tools before processing; if any are missing, it MUST list them clearly and exit with a non-zero status without processing files.
+- **FR-011**: Processing MUST run sequentially (one file at a time) to keep progress accurate and avoid tool contention by default.
 
 ### Key Entities *(include if feature involves data)*
 

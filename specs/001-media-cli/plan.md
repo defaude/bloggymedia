@@ -1,31 +1,25 @@
 # Implementation Plan: Bloggymedia CLI Experience
 
-**Branch**: `001-media-cli` | **Date**: 2025-12-07 | **Spec**: specs/001-media-cli/spec.md
+**Branch**: `001-media-cli` | **Date**: 2025-12-08 | **Spec**: specs/001-media-cli/spec.md
 **Input**: Feature specification from `/specs/001-media-cli/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. Align every section with the Constitution Check below.
 
 ## Summary
 
-CLI to optimize blog media in a flat target folder: backup each media file to `.originals`, optimize images (≤1200px, metadata removed) and videos (H.264 ≤720p, metadata removed), skip files with existing backups, ignore subdirectories, fail fast when required tools are missing, and provide continuous progress plus a final summary. Technical approach: Node 22 + TypeScript strict, zx-based adapters for `mogrify`/`ffmpeg`, fast-glob for file discovery limited to the target directory only, and Vitest-covered CLI/adapters for safety and idempotence.
+CLI to optimize media in a flat target folder: back up each media file to `.originals`, optimize images (≤1200px, metadata removed) and videos (H.264 ≤720p, metadata removed), skip files with existing backups, ignore subdirectories, and provide continuous progress plus a final summary. Approach: Node 22 + TypeScript strict, tsdown build to `dist/`, Biome-only lint/format, zx-based adapters for `mogrify`/`ffmpeg`, fast-glob for flat file discovery, sequential processing for predictable progress, Vitest-covered CLI/adapters for safety and idempotence.
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
 **Language/Version**: TypeScript 5.9 on Node 22 (ESM, strict)  
-**Primary Dependencies**: zx (adapters for `mogrify`/`ffmpeg`), fast-glob (flat folder scan)  
+**Primary Dependencies**: zx adapters for `mogrify`/`ffmpeg`, fast-glob for flat scan, tsdown, Biome  
 **Storage**: Local filesystem only (`.originals` backups plus optimized outputs)  
-**Testing**: Vitest (unit + integration for CLI/adapters)  
+**Testing**: Vitest (unit/integration for CLI/adapters)  
 **Target Platform**: Local CLI on macOS/Linux Node 22  
 **Project Type**: Single-package CLI  
-**Performance Goals**: Responsive UX: immediate greeting, per-file progress with no idle gaps; throughput driven by external tools, no strict p95 target  
-**Constraints**: Flat folder only; no subdirectory traversal; non-destructive backups; fail fast if tools missing; sequential processing acceptable by default  
-**Scale/Scope**: Flat folders of tens to low hundreds of media files; very large batches out of scope for now
+**Performance Goals**: Responsive UX with immediate greeting and per-file progress; sequential processing; no strict p95 target  
+**Constraints**: Flat-folder scope only, non-destructive backups, adapter-only external calls, fail fast on missing tools, tsdown emit to `dist/`, Biome-only lint/format  
+**Scale/Scope**: Tens to low hundreds of media files per run (blog-sized folders)
 
 ## Constitution Check
 
@@ -36,10 +30,7 @@ CLI to optimize blog media in a flat target folder: backup each media file to `.
 - Stack compliance: Node 22 + TypeScript `strict`, tsdown build emitting to `dist/` (no `build/`), Biome-managed lint/format (`npm run check`; `npm run check-fix` for safe autofix; `npm run check-fix-unsafe` only with review; no ESLint/Prettier), explicit types for CLI surfaces and adapters.
 - Test plan: Vitest coverage for CLI validation, adapter interactions, media bounds, and error paths; integration runs are opt-in.
 - UX expectations: progress/output describes backups and processing counts; default media bounds centralized and validated.
-
-Status: All gates currently satisfied by the spec; no violations expected. Will re-affirm after design.
-
-Post-design check (Phase 1): Constitution requirements remain satisfied; no exceptions needed.
+- Status: All gates satisfied by the current spec; no exceptions expected.
 
 ## Project Structure
 
@@ -78,5 +69,4 @@ test/                   # Vitest suites
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+| None | Gates satisfied | N/A |
