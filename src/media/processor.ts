@@ -1,11 +1,11 @@
 import { access, cp, constants as fsConstants, mkdir, rename, rm } from 'node:fs/promises';
 import { basename, dirname, extname, join } from 'node:path';
 
-import { $ } from 'zx';
-
 import { transcodeVideo } from '../adapters/ffmpeg.js';
 import { resizeImage } from '../adapters/mogrify.js';
-import { classifyMediaType, IMAGE_MAX_SIZE, ORIGINALS_DIR, VIDEO_MAX_HEIGHT } from './constants.js';
+import { classifyMediaType, IMAGE_MAX_SIZE, ORIGINALS_DIR, VIDEO_MAX_HEIGHT, VIDEO_MAX_WIDTH } from './constants.js';
+import { inspectVideo } from './inspect.js';
+import type { VideoInspectionResult } from './types.js';
 
 export type MediaFile = {
     path: string;
@@ -16,6 +16,8 @@ export type FileResult = {
     fileName: string;
     status: 'processed' | 'skipped' | 'failed';
     reason?: string;
+    reasons?: string[];
+    backupPath?: string;
 };
 
 export type ProcessSummary = {
@@ -50,6 +52,7 @@ export class MissingToolsError extends Error {
 }
 
 async function checkTool(binary: string): Promise<boolean> {
+    const { $ } = await import('zx');
     const result = await $`command -v ${binary}`.nothrow();
     return result.exitCode === 0;
 }
@@ -93,7 +96,7 @@ async function processImage(filePath: string) {
     await resizeImage({ input: filePath, maxSize: IMAGE_MAX_SIZE });
 }
 
-async function processVideo(filePath: string) {
+async function processVideo(filePath: string, inspection: VideoInspectionResult) {
     const directory = dirname(filePath);
     const extension = extname(filePath) || '.mp4';
     const baseName = basename(filePath, extension);
@@ -103,7 +106,11 @@ async function processVideo(filePath: string) {
         await transcodeVideo({
             input: filePath,
             output: tempOutput,
-            maxHeight: VIDEO_MAX_HEIGHT,
+            targetWidth: inspection.decision.plan.targetWidth || VIDEO_MAX_WIDTH,
+            targetHeight: inspection.decision.plan.targetHeight || VIDEO_MAX_HEIGHT,
+            targetFrameRate: inspection.decision.plan.targetFrameRate,
+            audioIndices: inspection.decision.plan.audioIndices,
+            subtitleIndices: inspection.decision.plan.keepSubtitleIndices,
         });
 
         await rename(tempOutput, filePath);
@@ -137,7 +144,7 @@ export async function processFiles({
     }
 
     const totals: ProcessSummary = { processed: 0, skipped: 0, failed: 0, files: [] };
-    const originalsDir = await ensureOriginalsDir(workingDir);
+    let originalsDir: string | null = null;
 
     for (let index = 0; index < filePaths.length; index += 1) {
         const filePath = filePaths[index];
@@ -160,32 +167,85 @@ export async function processFiles({
             continue;
         }
 
-        if (await backupExists(originalsDir, fileName)) {
-            totals.skipped += 1;
-            totals.files.push({ fileName, status: 'skipped', reason: 'backup-exists' });
-            onProgress?.({
-                currentFile: fileName,
-                status: 'skipped',
-                processed: totals.processed,
-                skipped: totals.skipped,
-                failed: totals.failed,
-                remaining,
-                reason: 'backup-exists',
-            });
-            continue;
-        }
-
         try {
-            await createBackupIfMissing(originalsDir, filePath, fileName);
-
             if (mediaType === 'image') {
+                if (!originalsDir) {
+                    originalsDir = await ensureOriginalsDir(workingDir);
+                }
+
+                if (await backupExists(originalsDir, fileName)) {
+                    totals.skipped += 1;
+                    totals.files.push({ fileName, status: 'skipped', reason: 'backup-exists' });
+                    onProgress?.({
+                        currentFile: fileName,
+                        status: 'skipped',
+                        processed: totals.processed,
+                        skipped: totals.skipped,
+                        failed: totals.failed,
+                        remaining,
+                        reason: 'backup-exists',
+                    });
+                    continue;
+                }
+
+                await createBackupIfMissing(originalsDir, filePath, fileName);
                 await processImage(filePath);
-            } else if (mediaType === 'video') {
-                await processVideo(filePath);
+
+                totals.processed += 1;
+                totals.files.push({ fileName, status: 'processed' });
+                onProgress?.({
+                    currentFile: fileName,
+                    status: 'processed',
+                    processed: totals.processed,
+                    skipped: totals.skipped,
+                    failed: totals.failed,
+                    remaining,
+                });
+                continue;
             }
 
+            // video path
+            const inspection = await inspectVideo(filePath);
+            const reasonText = inspection.decision.reasons.join(', ') || 'compliant';
+
+            if (inspection.decision.classification === 'skip') {
+                totals.skipped += 1;
+                totals.files.push({
+                    fileName,
+                    status: 'skipped',
+                    reason: reasonText,
+                    reasons: inspection.decision.reasons,
+                });
+                onProgress?.({
+                    currentFile: fileName,
+                    status: 'skipped',
+                    processed: totals.processed,
+                    skipped: totals.skipped,
+                    failed: totals.failed,
+                    remaining,
+                    reason: reasonText,
+                });
+                continue;
+            }
+
+            if (!originalsDir) {
+                originalsDir = await ensureOriginalsDir(workingDir);
+            }
+            const backupAlready = await backupExists(originalsDir, fileName);
+            if (!backupAlready) {
+                await createBackupIfMissing(originalsDir, filePath, fileName);
+            }
+
+            await processVideo(filePath, inspection);
+
             totals.processed += 1;
-            totals.files.push({ fileName, status: 'processed' });
+            totals.files.push({
+                fileName,
+                status: 'processed',
+                reason: reasonText,
+                reasons: inspection.decision.reasons,
+                backupPath: join(originalsDir, fileName),
+            });
             onProgress?.({
                 currentFile: fileName,
                 status: 'processed',
@@ -193,11 +253,14 @@ export async function processFiles({
                 skipped: totals.skipped,
                 failed: totals.failed,
                 remaining,
+                reason: reasonText,
             });
         } catch (error: unknown) {
             let reason = error instanceof Error ? error.message : 'Unknown error';
             try {
-                await restoreFailedProcessing(originalsDir, filePath, fileName);
+                if (originalsDir) {
+                    await restoreFailedProcessing(originalsDir, filePath, fileName);
+                }
             } catch (restoreError) {
                 const restoreReason = restoreError instanceof Error ? restoreError.message : 'Unknown restore error';
                 reason = `${reason} (restore failed: ${restoreReason})`;

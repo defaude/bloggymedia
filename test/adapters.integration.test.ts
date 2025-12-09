@@ -48,7 +48,7 @@ describe.sequential('adapter integration', () => {
         }
     }, 15000);
 
-    it('transcodes videos with ffmpeg respecting max height', async () => {
+    it('transcodes videos with ffmpeg using provided targets', async () => {
         await ensureToolAvailable('ffmpeg');
         await ensureToolAvailable('ffprobe');
 
@@ -57,14 +57,22 @@ describe.sequential('adapter integration', () => {
         const output = join(workdir, 'output.mp4');
 
         try {
-            await transcodeVideo({ input, output, maxHeight: 320 });
+            await transcodeVideo({
+                input,
+                output,
+                targetWidth: 480,
+                targetHeight: 640,
+                targetFrameRate: 24,
+                audioIndices: [],
+                subtitleIndices: [],
+            });
 
             const metadata =
                 await $`ffprobe -v error -select_streams v:0 -show_entries stream=height,codec_name -of json ${output}`;
             const { streams } = JSON.parse(metadata.stdout);
             const [videoStream] = streams as Array<{ height: number; codec_name: string }>;
 
-            expect(videoStream.height).toBeLessThanOrEqual(320);
+            expect(videoStream.height).toBeLessThanOrEqual(640);
             expect(videoStream.codec_name).toBe('h264');
 
             const outputStats = await stat(output);
@@ -83,7 +91,15 @@ describe.sequential('adapter integration', () => {
         const output = join(workdir, 'output.mp4');
 
         try {
-            await transcodeVideo({ input, output, maxHeight: 720 });
+            await transcodeVideo({
+                input,
+                output,
+                targetWidth: 640,
+                targetHeight: 480,
+                targetFrameRate: 24,
+                audioIndices: [],
+                subtitleIndices: [],
+            });
 
             const metadata =
                 await $`ffprobe -v error -select_streams v:0 -show_entries stream=avg_frame_rate -of json ${output}`;

@@ -14,14 +14,20 @@ vi.mock('../src/adapters/ffmpeg.js', () => ({
     }),
 }));
 
+vi.mock('../src/media/inspect.js', () => ({
+    inspectVideo: vi.fn(),
+}));
+
 import { transcodeVideo } from '../src/adapters/ffmpeg.js';
 import { resizeImage } from '../src/adapters/mogrify.js';
 import { cli } from '../src/cli.js';
 import { ORIGINALS_DIR } from '../src/media/constants.js';
+import { inspectVideo } from '../src/media/inspect.js';
 import * as processor from '../src/media/processor.js';
 
 const resizeImageMock = vi.mocked(resizeImage);
 const transcodeVideoMock = vi.mocked(transcodeVideo);
+const inspectVideoMock = vi.mocked(inspectVideo);
 
 describe('cli integration', () => {
     it('processes a flat folder, creates backups, and reports summary with progress logs', async () => {
@@ -38,6 +44,29 @@ describe('cli integration', () => {
         await writeFile(join(originalsDir, 'skipped.jpg'), 'already-backed-up');
 
         const toolSpy = vi.spyOn(processor, 'detectMissingTools').mockResolvedValue([]);
+        inspectVideoMock.mockResolvedValue({
+            filePath: video,
+            fileName: 'clip.mp4',
+            orientation: 'landscape',
+            probe: {
+                container: 'mp4',
+                video: { index: 0, width: 1920, height: 1080, codecName: 'hevc', frameRate: 30 },
+                audio: [],
+                subtitles: [],
+                hasMetadata: false,
+            },
+            decision: {
+                classification: 'process',
+                reasons: ['codec', 'resolution', 'frameRate'],
+                plan: {
+                    targetWidth: 1280,
+                    targetHeight: 720,
+                    targetFrameRate: 24,
+                    keepSubtitleIndices: [],
+                    audioIndices: [],
+                },
+            },
+        });
         const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
         try {
@@ -73,6 +102,29 @@ describe('cli integration', () => {
         await writeFile(video, 'video-bytes');
 
         const toolSpy = vi.spyOn(processor, 'detectMissingTools').mockResolvedValue([]);
+        inspectVideoMock.mockResolvedValue({
+            filePath: video,
+            fileName: 'clip.mp4',
+            orientation: 'landscape',
+            probe: {
+                container: 'mp4',
+                video: { index: 0, width: 1920, height: 1080, codecName: 'hevc', frameRate: 30 },
+                audio: [],
+                subtitles: [],
+                hasMetadata: false,
+            },
+            decision: {
+                classification: 'process',
+                reasons: ['codec', 'resolution', 'frameRate'],
+                plan: {
+                    targetWidth: 1280,
+                    targetHeight: 720,
+                    targetFrameRate: 24,
+                    keepSubtitleIndices: [],
+                    audioIndices: [],
+                },
+            },
+        });
         resizeImageMock.mockResolvedValue();
         transcodeVideoMock.mockRejectedValueOnce(new Error('ffmpeg error'));
 

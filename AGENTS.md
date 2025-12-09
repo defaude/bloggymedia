@@ -5,6 +5,7 @@ Auto-generated from all feature plans. Last updated: 2025-12-08
 ## Active Technologies
 - Local filesystem only (`.originals` backups plus optimized outputs) (001-media-cli)
 - TypeScript 5.9 on Node 22 (ESM, strict) + zx adapters for `mogrify`/`ffmpeg`, fast-glob for flat scan, tsdown, Biome (001-media-cli)
+- TypeScript 5.9 (ESM) on Node 22 + zx adapters for ffmpeg/ffprobe/mogrify, fast-glob for discovery, tsdown build, Biome for lint/format, Vitest for tests (002-video-processing-rules)
 
 ## Project Structure
 
@@ -22,6 +23,7 @@ npm run check && npm test
 TypeScript 5.9 on Node 22 (ESM, strict): Follow standard conventions; Biome-only lint/format
 
 ## Recent Changes
+- 002-video-processing-rules: Added TypeScript 5.9 (ESM) on Node 22 + zx adapters for ffmpeg/ffprobe/mogrify, fast-glob for discovery, tsdown build, Biome for lint/format, Vitest for tests
 - 001-media-cli: Added TypeScript 5.9 on Node 22 (ESM, strict) + zx adapters for `mogrify`/`ffmpeg`, fast-glob for flat scan, tsdown, Biome
 
 <!-- MANUAL ADDITIONS START -->
