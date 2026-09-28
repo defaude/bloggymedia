@@ -19,10 +19,10 @@ filename summary.
 
 - Images (`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`) are backed up to `.originals/<filename>`, stripped of metadata, and
   reduced to fit within 1200 × 1200 pixels.
-- Videos (`.mp4`, `.mov`, `.m4v`, `.avi`) are inspected first. A video already using H.264, within 1280 × 720 pixels
-  (720 × 1280 in portrait), at no more than 24 fps, and without relevant metadata is left untouched. Other videos are
-  backed up and re-encoded to meet those limits. The processor keeps the original file extension and maps audio and text
-  subtitle tracks to the output.
+- Videos (`.mp4`, `.mov`, `.m4v`, `.mkv`, `.avi`) are inspected first. A video already using H.264, within
+  1280 × 720 pixels (720 × 1280 in portrait), at no more than 24 fps, and without relevant metadata is left untouched.
+  Other videos are backed up and re-encoded to meet those limits. The processor keeps the original file extension and
+  maps audio and text subtitle tracks to the output.
 - A file with an existing backup in `.originals` is left untouched on later runs. Failures are reported per file, and
   processing continues with the remaining files.
 

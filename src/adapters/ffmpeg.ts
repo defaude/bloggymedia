@@ -1,3 +1,5 @@
+import { extname } from 'node:path';
+
 import { $ } from 'zx';
 
 export type FfmpegOptions = {
@@ -35,6 +37,11 @@ function buildSubtitleArgs(subtitleIndices: number[]) {
     return ['-c:s', 'copy'];
 }
 
+function buildContainerArgs(output: string) {
+    const extension = extname(output).toLowerCase();
+    return ['.mp4', '.m4v', '.mov'].includes(extension) ? ['-movflags', '+faststart'] : [];
+}
+
 export async function transcodeVideo({
     input,
     output,
@@ -47,14 +54,15 @@ export async function transcodeVideo({
     const mapArgs = buildMapArgs(audioIndices, subtitleIndices);
     const audioArgs = buildAudioArgs(audioIndices);
     const subtitleArgs = buildSubtitleArgs(subtitleIndices);
+    const containerArgs = buildContainerArgs(output);
 
     await $`ffmpeg -hide_banner -loglevel warning -y -i ${input} \
 -vf scale=${targetWidth}:${targetHeight} \
 -r ${targetFrameRate} \
--c:v libx264 -crf 23 -preset medium \
+-c:v libx264 -crf 23 -preset slow \
 ${audioArgs} \
 ${subtitleArgs} \
--movflags +faststart \
+${containerArgs} \
 -map_metadata -1 -map_metadata:s:v -1 -map_metadata:s:a -1 -map_metadata:s:s -1 -map_chapters -1 \
 ${mapArgs} \
 ${output}`;

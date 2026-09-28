@@ -26,7 +26,7 @@ function orientationOf(video: VideoStreamInfo): Orientation {
 }
 
 function even(value: number): number {
-    return Math.max(2, Math.round(value / 2) * 2);
+    return Math.max(2, Math.floor(value / 2) * 2);
 }
 
 function computeTargetResolution(video: VideoStreamInfo, orientation: Orientation) {

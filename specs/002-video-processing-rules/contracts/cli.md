@@ -5,7 +5,7 @@
   - `workingDir` (optional): directory to scan; defaults to current working directory.
 
 ## Inputs
-- Supported media extensions: per `VIDEO_EXTENSIONS` (mp4, mov, m4v, avi) plus images (for coexisting logic).
+- Supported media extensions: per `VIDEO_EXTENSIONS` (mp4, mov, m4v, mkv, avi) plus images (for coexisting logic).
 - External tooling required: `ffmpeg`, `ffprobe`, `mogrify`; absence yields error before processing.
 
 ## Behavior
@@ -25,7 +25,8 @@
   - Leaves `.originals` intact unless restoration is required after a failure.
 
 ## Outputs
-- Progress logs per file: status (`processed|skipped|failed`), counts (processed, skipped, failed, remaining), and reason if provided.
+- Progress logs per file: status (`processed|skipped|failed`), counts (processed, skipped, failed, remaining), and
+  reason if provided.
 - Summary logs at completion: totals and file lists per status.
 - Exit codes:
   - `0` on successful completion (even with skips).
