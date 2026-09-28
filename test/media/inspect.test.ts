@@ -62,7 +62,7 @@ describe('inspectVideo', () => {
             audio: [],
             subtitles: [],
             hasMetadata: false,
-        } as unknown as ReturnType<typeof probeMock>);
+        });
 
         const result = await inspectVideo('/tmp/structural.mp4');
 
@@ -77,19 +77,7 @@ describe('inspectVideo', () => {
             audio: [],
             subtitles: [],
             hasMetadata: false,
-            streams: [
-                {
-                    index: 0,
-                    codec_type: 'video',
-                    tags: {
-                        language: 'und',
-                        handler_name: 'VideoHandler',
-                        vendor_id: '[0][0][0][0]',
-                        encoder: 'Lavc62.11.100 libx264',
-                    },
-                },
-            ],
-        } as unknown as ReturnType<typeof probeMock>);
+        });
 
         const result = await inspectVideo('/tmp/structural-stream.mp4');
 

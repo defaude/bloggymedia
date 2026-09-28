@@ -42,11 +42,10 @@ function parseFrameRate(rate?: string): number | null {
 const IGNORED_FORMAT_TAG_KEYS = new Set(['major_brand', 'minor_version', 'compatible_brands', 'encoder']);
 const IGNORED_STREAM_TAG_KEYS = new Set(['language', 'handler_name', 'vendor_id', 'encoder']);
 
-function hasRelevantTags(
-    tags: Record<string, string> | undefined,
-    ignoredKeys: Set<string> = new Set()
-): boolean {
-    if (!tags) return false;
+function hasRelevantTags(tags: Record<string, string> | undefined, ignoredKeys: Set<string> = new Set()): boolean {
+    if (!tags) {
+        return false;
+    }
     return Object.entries(tags).some(([key, value]) => !ignoredKeys.has(key) && String(value ?? '').trim().length > 0);
 }
 
