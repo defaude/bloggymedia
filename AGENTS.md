@@ -1,30 +1,24 @@
-# bloggymedia Development Guidelines
+# bloggymedia development
 
-Auto-generated from all feature plans. Last updated: 2025-12-08
+Use Node.js 22 and npm from `~/.n/bin`. This is a TypeScript 5.9 ESM project with strict type checking. `src/` contains
+the CLI, media logic, and external tool adapters; `test/` contains Vitest tests.
 
-## Active Technologies
-- Local filesystem only (`.originals` backups plus optimized outputs) (001-media-cli)
-- TypeScript 5.9 on Node 22 (ESM, strict) + zx adapters for `mogrify`/`ffmpeg`, fast-glob for flat scan, tsdown, Biome (001-media-cli)
-- TypeScript 5.9 (ESM) on Node 22 + zx adapters for ffmpeg/ffprobe/mogrify, fast-glob for discovery, tsdown build, Biome for lint/format, Vitest for tests (002-video-processing-rules)
+## Project rules
 
-## Project Structure
-
-```text
-src/
-tests/
-```
+- Keep file discovery and writes within the selected directory. Back up media to `.originals` before changing it, and
+  never overwrite an existing backup.
+- Keep media limits in `src/media/constants.ts`. Preserve source dimensions and frame rate when they are below the
+  limits; do not upscale or add frames.
+- Put new external command calls in `src/adapters/` and use typed interfaces for them. The media and CLI modules should
+  coordinate processing without constructing tool commands.
+- Use Biome for formatting and linting, TypeScript for type checking, and tsdown for builds to `dist/`.
+- Wrap Markdown lines close to 120 characters where practical, but never exceed 120. Indent continuation lines in lists.
 
 ## Commands
 
-npm run check && npm test
+- `npm run check` — type checking and Biome checks
+- `npm test` — Vitest; the current suite includes tests that require installed media tools
+- `npm run build` — build `dist/index.js`
 
-## Code Style
-
-TypeScript 5.9 on Node 22 (ESM, strict): Follow standard conventions; Biome-only lint/format
-
-## Recent Changes
-- 002-video-processing-rules: Added TypeScript 5.9 (ESM) on Node 22 + zx adapters for ffmpeg/ffprobe/mogrify, fast-glob for discovery, tsdown build, Biome for lint/format, Vitest for tests
-- 001-media-cli: Added TypeScript 5.9 on Node 22 (ESM, strict) + zx adapters for `mogrify`/`ffmpeg`, fast-glob for flat scan, tsdown, Biome
-
-<!-- MANUAL ADDITIONS START -->
-<!-- MANUAL ADDITIONS END -->
+`README.md` describes the current CLI behavior. `specs/` records earlier design work; it is not an active Spec Kit
+workflow.
