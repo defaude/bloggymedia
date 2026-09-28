@@ -24,7 +24,7 @@ function parseFrameRate(value: string): number {
     return numerator / denominator;
 }
 
-describe.sequential('adapter integration', () => {
+describe('adapter integration', { concurrent: false }, () => {
     it('resizes images using mogrify', async () => {
         await ensureToolAvailable('mogrify');
         await ensureToolAvailable('identify');
