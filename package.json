@@ -27,7 +27,7 @@
     "devDependencies": {
         "@biomejs/biome": "2.5.15",
         "@rio-cloud/biome-config": "2.0.0",
-        "@tsconfig/node24": "24.0.5",
+        "@tsconfig/node26": "26.0.1",
         "@types/node": "26.6.4",
         "tsdown": "0.23.0",
         "typescript": "7.0.2",
