@@ -1,199 +1,196 @@
-import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, stat, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../src/adapters/mogrify.js', () => ({
-    resizeImage: vi.fn(),
-}));
-
-vi.mock('../src/adapters/ffmpeg.js', () => ({
-    transcodeVideo: vi.fn(),
-}));
-
-vi.mock('../src/media/inspect.js', () => ({
-    inspectVideo: vi.fn(),
-}));
+vi.mock('../src/adapters/mogrify.js', () => ({ resizeImage: vi.fn() }));
+vi.mock('../src/media/image.js', () => ({ inspectImage: vi.fn(), validateImage: vi.fn() }));
+vi.mock('../src/media/inspect.js', () => ({ inspectVideo: vi.fn() }));
+vi.mock('../src/adapters/ffmpeg.js', () => ({ transcodeVideo: vi.fn() }));
+vi.mock('../src/adapters/validate-video.js', () => ({ copiedStreamPackets: vi.fn() }));
 
 import { transcodeVideo } from '../src/adapters/ffmpeg.js';
 import { resizeImage } from '../src/adapters/mogrify.js';
-import { ORIGINALS_DIR } from '../src/media/constants.js';
+import { copiedStreamPackets } from '../src/adapters/validate-video.js';
+import { inspectImage, validateImage } from '../src/media/image.js';
 import { inspectVideo } from '../src/media/inspect.js';
-import * as processor from '../src/media/processor.js';
+import { processFiles } from '../src/media/processor.js';
+import type { VideoInspectionResult } from '../src/media/types.js';
 
-const resizeImageMock = vi.mocked(resizeImage);
-const transcodeVideoMock = vi.mocked(transcodeVideo);
-const inspectVideoMock = vi.mocked(inspectVideo);
+let dir: string;
+let image: string;
+const imageState = { frames: [], reasons: ['metadata'] };
+const video: VideoInspectionResult = {
+    filePath: '',
+    fileName: 'clip.mp4',
+    orientation: 'landscape',
+    probe: {
+        container: 'mov',
+        video: {
+            index: 0,
+            width: 640,
+            height: 480,
+            frameRate: 20,
+            codecName: 'h264',
+            timing: { start: 0, end: 2, frameCount: 40, constantFrameRate: true, timeBase: 1 / 10240 },
+        },
+        audio: [{ index: 1, codecName: 'aac' }],
+        subtitles: [],
+        hasMetadata: true,
+    },
+    decision: {
+        classification: 'process',
+        reasons: ['metadata'],
+        plan: { targetWidth: 640, targetHeight: 480, targetFrameRate: 20, audioIndices: [1], keepSubtitleIndices: [] },
+    },
+};
+
+beforeEach(async () => {
+    vi.resetAllMocks();
+    dir = await mkdtemp(join(tmpdir(), 'bloggymedia-process-'));
+    image = join(dir, 'photo.jpg');
+    await writeFile(image, 'source');
+    await utimes(image, 1600000000.123456, 1600000000.123456);
+    vi.mocked(inspectImage).mockResolvedValue(imageState);
+    vi.mocked(resizeImage).mockImplementation(async ({ input }) => {
+        await writeFile(input, 'processed');
+    });
+    vi.mocked(copiedStreamPackets).mockResolvedValue([['hash']]);
+});
+afterEach(async () => {
+    await rm(dir, { recursive: true, force: true });
+});
+
+function run(paths = [image], onProgress?: () => void) {
+    return processFiles({ workingDir: dir, filePaths: paths, toolCheck: async () => [], onProgress });
+}
+
+async function unchanged(path: string, mtime: number) {
+    expect(await readFile(path, 'utf8')).toBe('source');
+    expect((await stat(path)).mtimeMs).toBe(mtime);
+    expect((await readdir(dir)).filter(name => name.startsWith('.bloggymedia-'))).toEqual([]);
+}
 
 describe('processFiles', () => {
-    it('skips unsupported files', async () => {
-        const baseDir = await mkdtemp(join(tmpdir(), 'bloggymedia-process-'));
-        const otherPath = join(baseDir, 'notes.txt');
-        await writeFile(otherPath, 'text');
-
-        const summary = await processor.processFiles({
-            workingDir: baseDir,
-            filePaths: [otherPath],
-            toolCheck: async () => [],
-        });
-
-        expect(summary.processed).toBe(0);
-        expect(summary.skipped).toBe(1);
-        expect(summary.files[0]?.reason).toBe('unsupported');
-
-        await rm(baseDir, { recursive: true, force: true });
+    it('skips compliant images without writer calls or timestamp changes', async () => {
+        const time = (await stat(image)).mtimeMs;
+        vi.mocked(inspectImage).mockResolvedValue({ frames: [], reasons: [] });
+        expect((await run()).files[0]).toMatchObject({ status: 'skipped', reason: 'compliant' });
+        expect(resizeImage).not.toHaveBeenCalled();
+        await unchanged(image, time);
     });
 
-    it('skips compliant videos without creating backups', async () => {
-        const baseDir = await mkdtemp(join(tmpdir(), 'bloggymedia-skip-'));
-        const videoPath = join(baseDir, 'clip.mp4');
-        await writeFile(videoPath, 'video');
-
-        inspectVideoMock.mockResolvedValue({
-            filePath: videoPath,
-            fileName: 'clip.mp4',
-            orientation: 'landscape',
-            probe: {
-                container: 'mov',
-                video: { index: 0, width: 1280, height: 720, codecName: 'h264', frameRate: 23.976 },
-                audio: [],
-                subtitles: [],
-                hasMetadata: false,
-            },
-            decision: {
-                classification: 'skip',
-                reasons: [],
-                plan: {
-                    targetWidth: 1280,
-                    targetHeight: 720,
-                    targetFrameRate: 23.976,
-                    keepSubtitleIndices: [],
-                    audioIndices: [],
-                },
-            },
-        });
-
-        const summary = await processor.processFiles({
-            workingDir: baseDir,
-            filePaths: [videoPath],
-            toolCheck: async () => [],
-        });
-
-        expect(summary.processed).toBe(0);
-        expect(summary.skipped).toBe(1);
-        expect(summary.files[0]?.reason).toBe('compliant');
-        await expect(access(join(baseDir, ORIGINALS_DIR, 'clip.mp4'))).rejects.toThrow();
-
-        expect(transcodeVideoMock).not.toHaveBeenCalled();
-        await rm(baseDir, { recursive: true, force: true });
-    });
-
-    it('backs up and processes non-compliant videos with reasons recorded', async () => {
-        const baseDir = await mkdtemp(join(tmpdir(), 'bloggymedia-process-video-'));
-        const videoPath = join(baseDir, 'clip.mp4');
-        await writeFile(videoPath, 'video');
-
-        inspectVideoMock.mockResolvedValue({
-            filePath: videoPath,
-            fileName: 'clip.mp4',
-            orientation: 'landscape',
-            probe: {
-                container: 'mov',
-                video: { index: 0, width: 1920, height: 1080, codecName: 'hevc', frameRate: 30 },
-                audio: [{ index: 1, codecName: 'aac' }],
-                subtitles: [],
-                hasMetadata: true,
-            },
-            decision: {
-                classification: 'process',
-                reasons: ['codec', 'resolution', 'frameRate', 'metadata'],
-                plan: {
-                    targetWidth: 1280,
-                    targetHeight: 720,
-                    targetFrameRate: 24,
-                    keepSubtitleIndices: [],
-                    audioIndices: [1],
-                },
-            },
-        });
-
-        transcodeVideoMock.mockImplementation(async ({ output }) => {
-            await writeFile(output, 'processed');
-        });
-
-        const summary = await processor.processFiles({
-            workingDir: baseDir,
-            filePaths: [videoPath],
-            toolCheck: async () => [],
-        });
-
-        expect(summary.processed).toBe(1);
-        expect(summary.skipped).toBe(0);
-        expect(summary.files[0]?.reasons).toEqual(['codec', 'resolution', 'frameRate', 'metadata']);
-        await expect(access(join(baseDir, ORIGINALS_DIR, 'clip.mp4'))).resolves.toBeUndefined();
-
-        expect(transcodeVideoMock).toHaveBeenCalledWith(
-            expect.objectContaining({
-                input: videoPath,
-                targetWidth: 1280,
-                targetHeight: 720,
-                targetFrameRate: 24,
-                audioIndices: [1],
-                subtitleIndices: [],
-            })
+    it('keeps all processing reasons in results and progress', async () => {
+        vi.mocked(inspectImage).mockResolvedValue({ frames: [], reasons: ['resolution', 'metadata'] });
+        const onProgress = vi.fn();
+        const summary = await run([image], onProgress);
+        expect(summary.files[0]).toMatchObject({ status: 'processed', reason: 'resolution, metadata' });
+        expect(onProgress).toHaveBeenCalledWith(
+            expect.objectContaining({ reason: 'resolution, metadata', status: 'processed' })
         );
-
-        await rm(baseDir, { recursive: true, force: true });
     });
 
-    it('restores originals when processing fails', async () => {
-        const baseDir = await mkdtemp(join(tmpdir(), 'bloggymedia-restore-'));
-        const videoPath = join(baseDir, 'clip.mp4');
-        const originalContent = 'original video content';
-        await writeFile(videoPath, originalContent);
+    it('writes only a private temporary copy, validates, and preserves fractional mtime', async () => {
+        const time = (await stat(image)).mtimeMs;
+        const summary = await run();
+        expect(summary.processed).toBe(1);
+        const temp = vi.mocked(resizeImage).mock.calls[0][0].input;
+        expect(temp).not.toBe(image);
+        expect(temp).toMatch(/\.bloggymedia-.*\.jpg$/);
+        expect(validateImage).toHaveBeenCalled();
+        expect(await readFile(image, 'utf8')).toBe('processed');
+        expect(Math.abs((await stat(image)).mtimeMs - time)).toBeLessThan(0.002);
+        expect(await readdir(dir)).toEqual(['photo.jpg']);
+    });
 
-        inspectVideoMock.mockResolvedValue({
-            filePath: videoPath,
-            fileName: 'clip.mp4',
-            orientation: 'landscape',
-            probe: {
-                container: 'mov',
-                video: { index: 0, width: 1920, height: 1080, codecName: 'hevc', frameRate: 30 },
-                audio: [],
-                subtitles: [],
-                hasMetadata: false,
-            },
-            decision: {
-                classification: 'process',
-                reasons: ['codec'],
-                plan: {
-                    targetWidth: 1280,
-                    targetHeight: 720,
-                    targetFrameRate: 24,
-                    keepSubtitleIndices: [],
-                    audioIndices: [],
-                },
-            },
+    it.each(['tool', 'validation', 'unreadable', 'empty'])(
+        'preserves source on %s error and continues',
+        async failure => {
+            const time = (await stat(image)).mtimeMs;
+            const next = join(dir, 'next.jpg');
+            await writeFile(next, 'source');
+            if (failure === 'tool') {
+                vi.mocked(resizeImage).mockImplementationOnce(async ({ input }) => {
+                    await writeFile(input, 'partial');
+                    throw new Error('tool failed');
+                });
+            }
+            if (failure === 'validation') {
+                vi.mocked(validateImage).mockImplementationOnce(() => {
+                    throw new Error('bad output');
+                });
+            }
+            if (failure === 'unreadable') {
+                vi.mocked(inspectImage)
+                    .mockResolvedValueOnce(imageState)
+                    .mockRejectedValueOnce(new Error('unreadable'));
+            }
+            if (failure === 'empty') {
+                vi.mocked(resizeImage).mockImplementationOnce(async ({ input }) => {
+                    await writeFile(input, '');
+                });
+            }
+            const summary = await run([image, next]);
+            expect(summary.files.map(file => file.status)).toEqual(['failed', 'processed']);
+            await unchanged(image, time);
+        }
+    );
+
+    it('rejects an otherwise compliant video that lost its expected audio', async () => {
+        const path = join(dir, 'clip.mp4');
+        await writeFile(path, 'source');
+        const time = (await stat(path)).mtimeMs;
+        vi.mocked(inspectVideo)
+            .mockResolvedValueOnce(video)
+            .mockResolvedValueOnce({
+                ...video,
+                probe: { ...video.probe, audio: [], hasMetadata: false },
+                decision: { ...video.decision, classification: 'skip', reasons: [] },
+            });
+        vi.mocked(transcodeVideo).mockImplementation(async ({ output }) => {
+            await writeFile(output, 'incomplete');
         });
+        expect((await run([path])).failed).toBe(1);
+        await unchanged(path, time);
+    });
 
-        transcodeVideoMock.mockImplementation(async ({ input }) => {
-            await writeFile(input, 'corrupted');
-            throw new Error('transcode failure');
+    it('rejects changed copied stream contents before replacement', async () => {
+        const path = join(dir, 'clip.mp4');
+        await writeFile(path, 'source');
+        const time = (await stat(path)).mtimeMs;
+        vi.mocked(inspectVideo)
+            .mockResolvedValueOnce(video)
+            .mockResolvedValueOnce({
+                ...video,
+                probe: { ...video.probe, hasMetadata: false },
+                decision: { ...video.decision, classification: 'skip', reasons: [] },
+            });
+        vi.mocked(copiedStreamPackets)
+            .mockResolvedValueOnce([['source hash']])
+            .mockResolvedValueOnce([['different hash']]);
+        vi.mocked(transcodeVideo).mockImplementation(async ({ output }) => {
+            await writeFile(output, 'wrong audio');
         });
+        const summary = await run([path]);
+        expect(summary.files[0].reason).toContain('packet contents changed');
+        await unchanged(path, time);
+    });
 
-        const summary = await processor.processFiles({
-            workingDir: baseDir,
-            filePaths: [videoPath],
-            toolCheck: async () => [],
-        });
+    it('preserves committed output if progress reporting throws', async () => {
+        await expect(
+            run([image], () => {
+                throw new Error('report failed');
+            })
+        ).rejects.toThrow('report failed');
+        expect(await readFile(image, 'utf8')).toBe('processed');
+        expect(await readdir(dir)).toEqual(['photo.jpg']);
+    });
 
-        expect(summary.failed).toBe(1);
-        expect(summary.files[0]?.status).toBe('failed');
-
-        const restoredContent = await readFile(videoPath, 'utf8');
-        expect(restoredContent).toBe(originalContent);
-
-        await rm(baseDir, { recursive: true, force: true });
+    it('skips unsupported files and rejects paths outside the selected directory', async () => {
+        const other = join(dir, 'notes.txt');
+        await writeFile(other, 'text');
+        expect((await run([other])).files[0].reason).toBe('unsupported');
+        expect((await run([join(dir, '..', 'outside.jpg')])).failed).toBe(1);
     });
 });

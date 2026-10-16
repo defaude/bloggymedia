@@ -1,5 +1,3 @@
-export const ORIGINALS_DIR = '.originals';
-
 export const IMAGE_MAX_SIZE = '1200x1200';
 export const VIDEO_MAX_WIDTH = 1280;
 export const VIDEO_MAX_HEIGHT = 720;

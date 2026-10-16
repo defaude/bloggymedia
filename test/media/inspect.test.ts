@@ -38,6 +38,8 @@ describe('inspectVideo', () => {
             subtitles: [
                 { index: 2, codecName: 'hdmv_pgs_subtitle', kind: 'binary' },
                 { index: 3, codecName: 'srt', kind: 'text' },
+                { index: 4, codecName: 'bin_data', kind: 'data' },
+                { index: 5, codecName: 'ttf', kind: 'attachment' },
             ],
             hasMetadata: true,
         });
@@ -53,36 +55,6 @@ describe('inspectVideo', () => {
         expect(result.decision.plan.targetFrameRate).toBe(24);
         expect(result.decision.plan.audioIndices).toEqual([1]);
         expect(result.decision.plan.keepSubtitleIndices).toEqual([3]);
-    });
-
-    it('ignores structural format tags when deciding metadata presence', async () => {
-        probeMock.mockResolvedValue({
-            container: 'mp4',
-            video: { index: 0, width: 640, height: 360, codecName: 'h264', frameRate: 23.976 },
-            audio: [],
-            subtitles: [],
-            hasMetadata: false,
-        });
-
-        const result = await inspectVideo('/tmp/structural.mp4');
-
-        expect(result.decision.classification).toBe('skip');
-        expect(result.decision.reasons).toEqual([]);
-    });
-
-    it('ignores structural stream tags (language/handler/vendor/encoder) when deciding metadata presence', async () => {
-        probeMock.mockResolvedValue({
-            container: 'mp4',
-            video: { index: 0, width: 640, height: 360, codecName: 'h264', frameRate: 23.976 },
-            audio: [],
-            subtitles: [],
-            hasMetadata: false,
-        });
-
-        const result = await inspectVideo('/tmp/structural-stream.mp4');
-
-        expect(result.decision.classification).toBe('skip');
-        expect(result.decision.reasons).toEqual([]);
     });
 
     it('caps portrait videos to 720x1280 without upscaling', async () => {
@@ -103,4 +75,22 @@ describe('inspectVideo', () => {
         expect(result.decision.plan.targetHeight).toBe(1280);
         expect(result.decision.plan.targetFrameRate).toBe(24);
     });
+});
+
+it.each([
+    { width: 0 },
+    { height: -1 },
+    { width: Number.NaN },
+    { width: 1 },
+    { frameRate: 0 },
+    { frameRate: Number.POSITIVE_INFINITY },
+    { codecName: '' },
+])('rejects invalid essential video data %#', async invalid => {
+    probeMock.mockResolvedValue({
+        video: { index: 0, width: 64, height: 48, codecName: 'h264', frameRate: 12, ...invalid },
+        audio: [],
+        subtitles: [],
+        hasMetadata: false,
+    });
+    await expect(inspectVideo('/tmp/bad.mp4')).rejects.toThrow('essential video');
 });

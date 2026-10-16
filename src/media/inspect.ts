@@ -96,6 +96,14 @@ export async function inspectVideo(filePath: string): Promise<VideoInspectionRes
         throw new Error(`No video stream found in ${filePath}`);
     }
 
+    if (
+        !probe.video.codecName ||
+        ![probe.video.width, probe.video.height].every(value => Number.isInteger(value) && value >= 2) ||
+        !Number.isFinite(probe.video.frameRate) ||
+        probe.video.frameRate <= 0
+    ) {
+        throw new Error('Invalid essential video probe data');
+    }
     const orientation = orientationOf(probe.video);
     const decision = buildDecision(probe, probe.video, orientation);
 

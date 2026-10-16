@@ -47,8 +47,8 @@ describe('adapters/ffmpeg', () => {
             targetWidth: 1280,
             targetHeight: 720,
             targetFrameRate: 24,
-            audioIndices: [1],
-            subtitleIndices: [2],
+            audioIndices: [1, 2],
+            subtitleIndices: [3],
         });
 
         expect(zxMock).toHaveBeenCalledTimes(1);
@@ -57,12 +57,15 @@ describe('adapters/ffmpeg', () => {
         expect(command).toContain('-i /tmp/input.mov');
         expect(command).toContain('scale=1280:720');
         expect(command).toContain('-r 24');
-        expect(command).toContain('-c:v libx264');
+        expect(command).toContain('-c:v libx264 -crf 23 -preset slow');
         expect(command).toContain('-c:a copy');
         expect(command).toContain('-c:s copy');
         expect(command).toContain('-map 0:v:0');
         expect(command).toContain('-map 0:1');
         expect(command).toContain('-map 0:2');
+        expect(command).toContain('-map 0:3');
+        expect(command).not.toContain('-map 0:4');
+        expect(command).toContain('-movflags +faststart');
         expect(command).toContain('-map_metadata -1');
         expect(command).toContain('-map_chapters -1');
         expect(command).toContain('/tmp/output.mov');
@@ -89,5 +92,22 @@ describe('adapters/ffmpeg', () => {
         expect(command).toContain('-r 23.976');
         expect(command).not.toContain('-c:a copy');
         expect(command).not.toContain('-c:s copy');
+    });
+    it('copies audio while disabling absent subtitles', async () => {
+        await transcodeVideo({
+            input: '/tmp/input.mkv',
+            output: '/tmp/output.mkv',
+            targetWidth: 640,
+            targetHeight: 360,
+            targetFrameRate: 24,
+            audioIndices: [1],
+            subtitleIndices: [],
+        });
+        const command = commandFromCall(0);
+        expect(command).toContain('-map 0:1');
+        expect(command).toContain('-c:a copy');
+        expect(command).toContain('-sn');
+        expect(command).not.toContain('-map 0:2');
+        expect(command).not.toContain('-movflags');
     });
 });

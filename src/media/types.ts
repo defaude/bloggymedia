@@ -2,12 +2,22 @@ export type Orientation = 'landscape' | 'portrait';
 
 export type SubtitleKind = 'text' | 'binary' | 'attachment' | 'data';
 
+export type VideoTiming = {
+    // Presentation interval relative to the container's start, not its total duration.
+    start: number;
+    end: number;
+    frameCount: number;
+    constantFrameRate: boolean;
+    timeBase: number;
+};
+
 export type VideoStreamInfo = {
     index: number;
     width: number;
     height: number;
     codecName: string;
     frameRate: number;
+    timing?: VideoTiming;
 };
 
 export type AudioStreamInfo = {
@@ -26,6 +36,7 @@ export type SubtitleStreamInfo = {
 
 export type VideoProbe = {
     container?: string;
+    duration?: number;
     video: VideoStreamInfo | null;
     audio: AudioStreamInfo[];
     subtitles: SubtitleStreamInfo[];

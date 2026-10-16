@@ -1,15 +1,15 @@
 import { stat } from 'node:fs/promises';
 
-import { ORIGINALS_DIR } from './media/constants.js';
 import { findMediaFiles } from './media/filesystem.js';
 import { MissingToolsError, type ProgressUpdate, processFiles } from './media/processor.js';
 
 export type CliOptions = {
     workingDir?: string;
+    signal?: AbortSignal;
 };
 
-export async function cli({ workingDir = process.cwd() }: CliOptions) {
-    console.log('Starting bloggymedia...'); // immediate greeting for SC-001
+export async function cli({ workingDir = process.cwd(), signal }: CliOptions) {
+    console.log('Starting bloggymedia...');
 
     const info = await stat(workingDir).catch(() => null);
 
@@ -28,7 +28,7 @@ export async function cli({ workingDir = process.cwd() }: CliOptions) {
         return;
     }
 
-    console.log(`Found ${filePaths.length} media file(s). Backups will be stored in ${ORIGINALS_DIR}/`);
+    console.log(`Found ${filePaths.length} media file(s). Inspecting current state.`);
 
     const logProgress = (update: ProgressUpdate) => {
         const { currentFile, status, processed, skipped, failed, remaining, reason } = update;
@@ -39,7 +39,12 @@ export async function cli({ workingDir = process.cwd() }: CliOptions) {
     };
 
     try {
-        const summary = await processFiles({ workingDir, filePaths, onProgress: logProgress });
+        const summary = await processFiles({
+            workingDir,
+            filePaths,
+            onProgress: logProgress,
+            ...(signal ? { signal } : {}),
+        });
 
         console.log('--- Summary ---');
         console.log(`Processed: ${summary.processed}`);

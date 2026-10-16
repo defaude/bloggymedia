@@ -2,6 +2,8 @@ import { extname } from 'node:path';
 
 import { $ } from 'zx';
 
+import { VIDEO_CODEC } from '../media/constants.js';
+
 export type FfmpegOptions = {
     input: string;
     output: string;
@@ -59,7 +61,7 @@ export async function transcodeVideo({
     await $`ffmpeg -hide_banner -loglevel warning -y -i ${input} \
 -vf scale=${targetWidth}:${targetHeight} \
 -r ${targetFrameRate} \
--c:v libx264 -crf 23 -preset slow \
+-c:v ${VIDEO_CODEC} -crf 23 -preset slow \
 ${audioArgs} \
 ${subtitleArgs} \
 ${containerArgs} \
