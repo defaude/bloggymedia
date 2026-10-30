@@ -4,16 +4,6 @@
     "version": "1.0.0",
     "license": "MIT",
     "type": "module",
-    "bin": "dist/index.js",
-    "scripts": {
-        "build": "tsdown",
-        "check": "tsc && biome check",
-        "check-fix": "biome check --fix",
-        "check-fix-unsafe": "biome check --fix --unsafe",
-        "generate-fixtures": "node scripts/generate-fixtures.js",
-        "test": "vitest run",
-        "test-watch": "vitest"
-    },
     "keywords": [
         "image",
         "video",
@@ -23,6 +13,19 @@
         "name": "Roland Hummel",
         "email": "git@defaude.info",
         "url": "https://github.com/defaude"
+    },
+    "bin": "dist/index.js",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsdown",
+        "check": "tsc && biome check",
+        "check-fix": "biome check --fix",
+        "check-fix-unsafe": "biome check --fix --unsafe",
+        "generate-fixtures": "node scripts/generate-fixtures.js",
+        "test": "vitest run",
+        "test-watch": "vitest"
     },
     "devDependencies": {
         "@biomejs/biome": "2.5.15",
