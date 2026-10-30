@@ -14,7 +14,9 @@
         "email": "git@defaude.info",
         "url": "https://github.com/defaude"
     },
-    "bin": "dist/index.js",
+    "bin": {
+        "bloggymedia": "dist/index.js"
+    },
     "files": [
         "dist"
     ],
