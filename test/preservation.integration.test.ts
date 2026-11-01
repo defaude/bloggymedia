@@ -138,7 +138,7 @@ it('rejects that real incomplete output through the transaction and continues wi
     expect((await readdir(dir)).sort()).toEqual(['next.mp4', 'source.mp4']);
 }, 30000);
 
-it('accepts the existing resampling operation for real variable-rate input', async () => {
+it('accepts fps-filter resampling for real variable-rate input', async () => {
     const input = join(root, 'fixtures', 'variable.mp4');
     const source = await inspectVideo(input);
     expect(source.probe.video?.timing?.constantFrameRate).toBe(false);

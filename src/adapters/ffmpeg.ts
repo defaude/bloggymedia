@@ -57,10 +57,13 @@ export async function transcodeVideo({
     const audioArgs = buildAudioArgs(audioIndices);
     const subtitleArgs = buildSubtitleArgs(subtitleIndices);
     const containerArgs = buildContainerArgs(output);
+    // Resample timestamps once, including EOF, and discard surplus frames before scaling.
+    // Leave start_time unset to preserve video offsets relative to copied audio.
+    const filters = `fps=${targetFrameRate}:round=near:eof_action=pass,scale=${targetWidth}:${targetHeight}`;
 
     await $`ffmpeg -hide_banner -loglevel warning -y -i ${input} \
--vf scale=${targetWidth}:${targetHeight} \
--r ${targetFrameRate} \
+-vf ${filters} \
+-fps_mode:v passthrough \
 -c:v ${VIDEO_CODEC} -crf 23 -preset slow \
 ${audioArgs} \
 ${subtitleArgs} \

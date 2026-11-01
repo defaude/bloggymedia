@@ -55,8 +55,10 @@ describe('adapters/ffmpeg', () => {
         const command = commandFromCall(0);
         expect(command).toContain('ffmpeg -hide_banner -loglevel warning');
         expect(command).toContain('-i /tmp/input.mov');
-        expect(command).toContain('scale=1280:720');
-        expect(command).toContain('-r 24');
+        expect(command).toContain('-vf fps=24:round=near:eof_action=pass,scale=1280:720');
+        expect(command).toContain('-fps_mode:v passthrough');
+        expect(command).not.toContain('-r ');
+        expect(command).not.toContain('start_time=');
         expect(command).toContain('-c:v libx264 -crf 23 -preset slow');
         expect(command).toContain('-c:a copy');
         expect(command).toContain('-c:s copy');
@@ -89,7 +91,7 @@ describe('adapters/ffmpeg', () => {
         expect(command).toContain('-an');
         expect(command).toContain('-sn');
         expect(command).toContain('scale=640:480');
-        expect(command).toContain('-r 23.976');
+        expect(command).toContain('fps=23.976:round=near:eof_action=pass');
         expect(command).not.toContain('-c:a copy');
         expect(command).not.toContain('-c:s copy');
     });

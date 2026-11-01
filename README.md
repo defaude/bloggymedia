@@ -59,10 +59,15 @@ The existing `mogrify` operation resizes each rectangle independently and can le
 unscaled. A partial-frame GIF that would change the spatial composition reports a validation error; its source bytes
 and mtime remain unchanged and its temporary output is removed. No coalescing or new animation pipeline is introduced.
 
-Video frame-count checks require equal counts at unchanged constant frame rate. The existing `-r` operation resamples
-variable-rate video and capped frame rates, so these cases use decoded coverage and the target rate instead.
-Rounding allows one fewer boundary frame or up to two additional frames from the existing FFmpeg synchronizer.
-The acceptance report explains the measured behavior and temporal tolerances; exact VFR timestamps are not preserved.
+Video frame-count checks require equal counts at unchanged constant frame rate. The `fps` filter resamples
+variable-rate video and capped frame rates using `round=near:eof_action=pass`, before scaling. Output uses
+`-fps_mode:v passthrough` to avoid a second frame synchronization step. The filter's `start_time` remains unset
+to retain video offsets relative to copied audio. EOF is rounded upward so even a very short clip retains a frame.
+These cases use decoded coverage and the target rate, allowing one frame of timing tolerance at each boundary.
+Nearest-start and upward-EOF rounding can add up to 1.5 frames to the duration-based expected count.
+Exact VFR timestamps are not preserved.
+This replaces the older `-r` behavior documented in the acceptance report, which could extend video beyond its
+source interval by more than two target frames on phone recordings with slightly variable timestamps.
 
 To run a local checkout:
 

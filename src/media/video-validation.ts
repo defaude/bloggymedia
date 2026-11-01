@@ -57,15 +57,14 @@ function validateVideoTiming(source: VideoInspectionResult, output: VideoInspect
     if (![sourceRate, targetRate].every(rate => Number.isFinite(rate) && rate > 0)) {
         throw new Error('Missing required video frame rate evidence');
     }
-    // The existing ffmpeg -r frame synchronizer can retain two queued boundary
-    // frames (measured: 15 frames/30fps -> 14 frames/24fps). A shortened interval
-    // gets only one target-frame rounding allowance, not that extension allowance.
+    // fps rounds the start to the nearest tick and EOF up (eof_action=pass).
+    // Each boundary stays within one target frame, including very short inputs.
     const precision = before.timeBase + after.timeBase + 0.000002;
     const boundary = 1 / targetRate;
     if (
         Math.abs(before.start - after.start) > boundary + precision ||
         before.end - after.end > boundary + precision ||
-        after.end - before.end > 2 * boundary + precision
+        after.end - before.end > boundary + precision
     ) {
         throw new Error('Video coverage does not match the source presentation interval');
     }
@@ -74,11 +73,11 @@ function validateVideoTiming(source: VideoInspectionResult, output: VideoInspect
             throw new Error('Video frames lost or added at unchanged constant frame rate');
         }
     } else {
-        // VFR input is resampled by the existing -r operation; original frame count
-        // is not invariant. Allow one rounded frame fewer or two queued frames more.
+        // Nearest-start / upward-EOF rounding can add up to 1.5 target frames.
+        // VFR input is resampled, so its original frame count is not invariant.
         const expected = (before.end - before.start) * targetRate;
         const rounding = targetRate * precision;
-        if (after.frameCount < expected - 1 - rounding || after.frameCount > expected + 2 + rounding) {
+        if (after.frameCount < expected - 1 - rounding || after.frameCount > expected + 1.5 + rounding) {
             throw new Error('Video frames do not match the planned resampling duration');
         }
     }

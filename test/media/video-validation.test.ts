@@ -50,8 +50,11 @@ it('permits a boundary frame from CFR resampling but rejects additional losses',
     const source = inspection(30, { ...timing, frameCount: 60 });
     expect(() => validateVideo(source, inspection(24, { ...timing, frameCount: 47 }))).not.toThrow();
     expect(() => validateVideo(source, inspection(24, { ...timing, frameCount: 46 }))).toThrow('Video frames');
-    expect(() => validateVideo(source, inspection(24, { ...timing, end: 50 / 24, frameCount: 50 }))).not.toThrow();
-    expect(() => validateVideo(source, inspection(24, { ...timing, frameCount: 51 }))).toThrow('Video frames');
+    expect(() => validateVideo(source, inspection(24, { ...timing, end: 49 / 24, frameCount: 49 }))).not.toThrow();
+    expect(() => validateVideo(source, inspection(24, { ...timing, end: 50 / 24, frameCount: 50 }))).toThrow(
+        'Video coverage'
+    );
+    expect(() => validateVideo(source, inspection(24, { ...timing, frameCount: 50 }))).toThrow('Video frames');
 });
 it('uses temporal coverage and planned output rate for variable-rate sources', () => {
     const source = inspection(12, { ...timing, constantFrameRate: false, frameCount: 18 });
